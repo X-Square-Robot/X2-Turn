@@ -1,27 +1,73 @@
-# Transformers model definition
+# Transformers loader
 
-`modeling_voxtral_mtp.py` is the training-compatible definition of the
-shared-backbone Voxtral ASR + turn model. It adds an independent
-full-vocabulary `vad_lm_head` to
-`VoxtralRealtimeForConditionalGeneration`.
+The installable model definition lives in
+[`src/voxtral_realtime/transformers/`](../../src/voxtral_realtime/transformers/).
+It is a regular PyTorch `nn.Module` wrapper around the unmodified
+`VoxtralRealtimeForConditionalGeneration`, with an independent full-vocabulary
+`vad_lm_head`.
 
-This integration is intentionally separate from the lightweight
-`voxtral-realtime` runtime package because it requires PyTorch, Transformers,
-and safetensors.
+Install the optional dependencies without changing Transformers source code:
 
-## Rebuild a canonical checkpoint
+```bash
+python -m pip install -e ".[transformers]"
+```
+
+## Load a local or Hugging Face checkpoint
 
 ```python
 import torch
+from transformers import AutoProcessor
 
-from modeling_voxtral_mtp import load_mtp_checkpoint
+from voxtral_realtime.transformers import (
+    infer_asr_turn,
+    load_mtp_checkpoint,
+)
 
+model_id = "x-square/voxtral-mtp-turn-v3-delay0-zhen"
+processor = AutoProcessor.from_pretrained(model_id)
 model = load_mtp_checkpoint(
-    "/path/to/voxtral-mtp-turn-v3-delay0-zhen/final",
+    model_id,
     device="cuda",
     dtype=torch.bfloat16,
 ).eval()
+
+result = infer_asr_turn(model, processor, "/path/to/input.wav")
+print("ASR:", result.transcript)
+for frame in result.turn_frames:
+    print(frame.start_ms, frame.end_ms, frame.label, frame.confidence)
 ```
+
+`load_mtp_checkpoint()` downloads `config.json` and `model.safetensors` when
+given a Hub model ID. It then creates the stock Voxtral model, wraps it with
+`VoxtralMTP`, and loads the canonical `base_model.*` plus
+`vad_lm_head.weight` state dict. It does not register an AutoModel class and
+does not require `trust_remote_code`.
+
+`infer_asr_turn()` generates ASR with the stock model and performs a second
+aligned forward pass over `vad_lm_head`. It returns the transcript, generated
+token ids, and all six-class turn predictions on the 80 ms timeline.
+
+The same loading example is available as a script:
+
+```bash
+python integrations/transformers/examples/load_checkpoint.py \
+  --model x-square/voxtral-mtp-turn-v3-delay0-zhen
+```
+
+To transcribe one file and print all six-class turn predictions on the 80 ms
+timeline:
+
+```bash
+python integrations/transformers/examples/offline_inference.py \
+  --model /path/to/voxtral-mtp-turn \
+  --audio /path/to/input.wav \
+  --output offline_frames.json
+```
+
+This local example first generates the aligned ASR sequence, then runs a second
+forward pass through `vad_lm_head`. The second pass is required because stock
+Transformers generation only uses the ASR head. Production realtime inference
+should use the vLLM integration, which emits `turn.delta` incrementally.
 
 Run the CPU-only wrapper tests from this directory in an environment containing
 PyTorch and Transformers:

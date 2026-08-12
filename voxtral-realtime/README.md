@@ -31,11 +31,16 @@ Python 3.10 or newer is required.
 
 ## Model definition
 
-The training-compatible `VoxtralMTP` wrapper and canonical-checkpoint loader
-live in
-[`integrations/transformers/`](integrations/transformers/README.md). They are
-kept with inference code so the model contract, offline path, and vLLM path can
-be versioned together.
+The training-compatible `VoxtralMTP` wrapper and manual checkpoint loader live
+in the optional `voxtral_realtime.transformers` module:
+
+```bash
+python -m pip install -e ".[transformers]"
+```
+
+See [`integrations/transformers/`](integrations/transformers/README.md) for
+local and Hugging Face loading examples. The loader uses the unmodified stock
+Transformers Voxtral implementation; it does not require `trust_remote_code`.
 
 ## vLLM prerequisite
 

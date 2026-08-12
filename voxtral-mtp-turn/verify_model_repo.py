@@ -9,6 +9,8 @@ import re
 import sys
 from pathlib import Path
 
+from safetensors import safe_open
+
 REQUIRED_FILES = {
     "README.md",
     "LICENSE",
@@ -201,8 +203,8 @@ def main() -> int:
             if custom.get("frame_duration_ms") != 80:
                 errors.append("frame_duration_ms must be 80")
             if custom.get("wrapper_definition") != (
-                "voxtral-realtime/integrations/transformers/"
-                "modeling_voxtral_mtp.py"
+                "voxtral-realtime/src/voxtral_realtime/"
+                "transformers/modeling.py"
             ):
                 errors.append("wrapper_definition must point to voxtral-realtime")
 
@@ -218,6 +220,27 @@ def main() -> int:
         )
     elif not weight_files:
         notes.append("no model weights found")
+
+    canonical_weights = repo / "model.safetensors"
+    if canonical_weights.is_file():
+        try:
+            with safe_open(canonical_weights, framework="numpy") as handle:
+                weight_keys = set(handle.keys())
+        except Exception as exc:
+            errors.append(f"cannot inspect model.safetensors: {exc}")
+        else:
+            required_weights = {
+                "base_model.lm_head.weight",
+                "vad_lm_head.weight",
+            }
+            missing_weights = sorted(required_weights - weight_keys)
+            if missing_weights:
+                errors.append(
+                    "model.safetensors missing required tensors: "
+                    + ", ".join(missing_weights)
+                )
+            if not any(key.startswith("base_model.model.") for key in weight_keys):
+                errors.append("model.safetensors has no base_model.model.* backbone")
 
     private_path_patterns = [
         re.compile(re.escape("/") + r"(?:mnt|home|workspace|Users)/"),

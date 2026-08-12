@@ -25,6 +25,11 @@ dev = [
   "pytest-asyncio>=0.23",
   "ruff>=0.6",
 ]
+transformers = [
+  "huggingface-hub",
+  "torch",
+  "transformers>=5.10.0",
+]
 
 [project.scripts]
 voxtral-realtime = "voxtral_realtime.cli:main"

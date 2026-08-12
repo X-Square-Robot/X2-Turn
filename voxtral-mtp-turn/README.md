@@ -126,9 +126,9 @@ versions.
 
 ## Model definition
 
-The `voxtral-realtime` code repository contains the training-side definition at
-[`integrations/transformers/modeling_voxtral_mtp.py`](../voxtral-realtime/integrations/transformers/modeling_voxtral_mtp.py).
-`VoxtralMTP` wraps
+The `voxtral-realtime` code repository provides the installable
+`voxtral_realtime.transformers` loader. It uses a regular `VoxtralMTP`
+`nn.Module` around the stock
 `VoxtralRealtimeForConditionalGeneration` with:
 
 - the original `lm_head` for streaming ASR;
@@ -136,23 +136,61 @@ The `voxtral-realtime` code repository contains the training-side definition at
 - joint ASR and turn losses, including safe all-masked turn batches; and
 - a turn-head-only mode that freezes the shared backbone in the graph.
 
-Rebuild the canonical `final` checkpoint with:
+Install the code repository and load this Hub checkpoint without modifying
+Transformers or enabling `trust_remote_code`:
+
+```bash
+git clone https://github.com/x-square/voxtral-realtime.git
+python -m pip install -e "./voxtral-realtime[transformers]"
+```
 
 ```python
 import torch
+from transformers import AutoProcessor
 
-from modeling_voxtral_mtp import load_mtp_checkpoint
+from voxtral_realtime.transformers import (
+    infer_asr_turn,
+    load_mtp_checkpoint,
+)
 
+model_id = "x-square/voxtral-mtp-turn-v3-delay0-zhen"
+audio_path = "/path/to/input.wav"
+processor = AutoProcessor.from_pretrained(model_id)
 model = load_mtp_checkpoint(
-    "/path/to/voxtral-mtp-turn-v3-delay0-zhen/final",
+    model_id,
     device="cuda",
     dtype=torch.bfloat16,
 ).eval()
+
+result = infer_asr_turn(model, processor, audio_path)
+print("ASR:", result.transcript)
+for frame in result.turn_frames:
+    print(
+        frame.start_ms,
+        frame.end_ms,
+        frame.label,
+        frame.confidence,
+    )
 ```
 
-This definition is intended for checkpoint inspection, evaluation, and
-training-compatible reconstruction. Production serving still uses the pinned
-vLLM overlay described below.
+`infer_asr_turn()` returns the transcript and one six-class turn prediction per
+80 ms frame. Internally, ASR generation uses the original Voxtral head and a
+second aligned forward pass evaluates `vad_lm_head`. The loader also accepts a
+local `final/` directory in place of `model_id`.
+
+For a complete single-file example that prints every 80 ms turn frame and
+writes JSON, run from the `voxtral-realtime` repository:
+
+```bash
+python integrations/transformers/examples/offline_inference.py \
+  --model x-square/voxtral-mtp-turn-v3-delay0-zhen \
+  --audio /path/to/input.wav \
+  --output offline_frames.json
+```
+
+This interface is intended for checkpoint inspection, evaluation, and
+training-compatible reconstruction. Production realtime serving still uses
+the pinned vLLM overlay described below.
 
 ## Serving
 
@@ -177,9 +215,8 @@ until every ownership, training-data, privacy, and license gate in
 
 1. **Model weights:** `model.safetensors` containing the base model under the
    `base_model.*` parameter namespace and the separate
-   `vad_lm_head.weight` turn head. If an approved release process shards this
-   file, include all generated shards and `model.safetensors.index.json`; do
-   not mix unsharded and sharded layouts.
+   `vad_lm_head.weight` turn head. Keep this initial release unsharded because
+   the repository loader intentionally targets the canonical file layout.
 2. **Architecture metadata:** `config.json` for the Hugging Face Voxtral
    backbone and `params.json` for the Mistral/vLLM architecture metadata.
    `config.example.json` documents the custom wrapper contract but is not a
@@ -200,9 +237,10 @@ The inspected source checkpoint metadata identifies
 `audio_length_per_tok: 8`, `default_num_delay_tokens: 6`, 16 kHz audio, and a
 12.5 Hz frame rate. It does not itself declare the additional turn head.
 
-`config.example.json` records the machine-readable wrapper contract. Its
-executable definition is versioned with `voxtral-realtime`, alongside the
-offline and vLLM inference integrations. The example configuration remains
+`config.example.json` records the machine-readable wrapper contract. The
+checkpoint keeps the stock Voxtral `config.json`; the separate
+`voxtral-realtime` loader creates the MTP wrapper before loading
+`base_model.*` and `vad_lm_head.weight`. The example configuration remains
 intentionally non-loadable and must not replace the checkpoint's real
 `config.json`.
 

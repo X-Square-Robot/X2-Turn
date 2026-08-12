@@ -192,22 +192,63 @@ class VoxtralMTP(nn.Module):
         return self.base_model.generate(*args, **kwargs)
 
 
+def _resolve_model_dir(
+    model_id_or_path: str | Path,
+    *,
+    revision: str | None = None,
+    cache_dir: str | Path | None = None,
+    local_files_only: bool = False,
+) -> Path:
+    candidate = Path(model_id_or_path).expanduser()
+    if candidate.is_dir():
+        return candidate
+
+    from huggingface_hub import snapshot_download
+
+    return Path(
+        snapshot_download(
+            repo_id=str(model_id_or_path),
+            revision=revision,
+            cache_dir=str(cache_dir) if cache_dir is not None else None,
+            local_files_only=local_files_only,
+            allow_patterns=["config.json", "model.safetensors"],
+        )
+    )
+
+
+def _validate_load_result(missing: list[str], unexpected: list[str]) -> None:
+    missing = [name for name in missing if name != "base_model.lm_head.weight"]
+    if missing or unexpected:
+        raise RuntimeError(
+            f"incompatible checkpoint: missing={missing[:8]}, "
+            f"unexpected={unexpected[:8]}"
+        )
+
+
 def load_mtp_checkpoint(
-    model_dir: str | Path,
+    model_id_or_path: str | Path,
     *,
     device: str | torch.device = "cpu",
     dtype: torch.dtype | None = None,
     vad_loss_weight: float = 0.1,
     train_vad_head_only: bool = False,
+    revision: str | None = None,
+    cache_dir: str | Path | None = None,
+    local_files_only: bool = False,
 ) -> VoxtralMTP:
-    """Rebuild ``VoxtralMTP`` from the canonical ``final`` checkpoint."""
+    """Load ``VoxtralMTP`` from a local directory or Hugging Face Hub."""
     from safetensors.torch import load_file
     from transformers import (
         VoxtralRealtimeConfig,
         VoxtralRealtimeForConditionalGeneration,
     )
 
-    model_dir = Path(model_dir)
+    model_dir = _resolve_model_dir(
+        model_id_or_path,
+        revision=revision,
+        cache_dir=cache_dir,
+        local_files_only=local_files_only,
+    )
     config = VoxtralRealtimeConfig.from_pretrained(model_dir)
     base_model = VoxtralRealtimeForConditionalGeneration(config)
     model = VoxtralMTP(
@@ -217,12 +258,7 @@ def load_mtp_checkpoint(
     )
     state_dict = load_file(str(model_dir / "model.safetensors"))
     missing, unexpected = model.load_state_dict(state_dict, strict=False)
-    missing = [name for name in missing if not name.endswith("lm_head.weight")]
-    if missing or unexpected:
-        raise RuntimeError(
-            f"incompatible checkpoint: missing={missing[:8]}, "
-            f"unexpected={unexpected[:8]}"
-        )
+    _validate_load_result(missing, unexpected)
     if dtype is None:
         return model.to(device=device)
     return model.to(device=device, dtype=dtype)
