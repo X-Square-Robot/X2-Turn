@@ -64,6 +64,9 @@ python integrations/transformers/examples/offline_inference.py \
 - [`voxtral-mtp-turn/`](voxtral-mtp-turn/README.md) is the Model Hub release
   staging directory: Model Card, configuration, tokenizer metadata, release
   checks, and optionally the approved weights.
+- [`turn-demo/`](turn-demo/README.md) is the focused browser demo for testing
+  ASR, 80 ms turn frames, and ACCEPT/REJECT/HOLD/barge-in policy without an LLM
+  or TTS service.
 - [`full-duplex-demo/`](full-duplex-demo/README.md) is the browser-based
   full-duplex dialogue demo that combines X2 Turn with optional LLM and TTS
   services.
@@ -82,6 +85,11 @@ python scripts/check_public_release.py
 
 cd ../voxtral-mtp-turn
 python verify_model_repo.py --allow-weights
+
+cd ../turn-demo
+python -m pip install -e .
+pytest
+python scripts/check_public_release.py
 
 cd ../full-duplex-demo
 python -m pip install -e ../voxtral-realtime
