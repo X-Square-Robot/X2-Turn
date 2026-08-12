@@ -36,6 +36,10 @@ Open <http://localhost:7860>. The model loads on first startup. Set
 `DEVICE=cpu` only for small tests; the 4B checkpoint is intended for a
 CUDA-capable machine.
 
+The server binds to `127.0.0.1` by default and has no authentication. If you
+set `HOST=0.0.0.0`, place it behind an authenticated HTTPS reverse proxy and
+do not expose uploaded speech to an untrusted network.
+
 ## Start with realtime vLLM
 
 Stock vLLM does not emit `turn.delta`. First start the patched runtime described

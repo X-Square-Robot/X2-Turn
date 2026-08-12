@@ -865,7 +865,7 @@ def parse_args():
         default="",
         help="optional local scenario JSONL; upload and microphone work without it",
     )
-    p.add_argument("--host", default="0.0.0.0")
+    p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=7860)
     return p.parse_args()
 
