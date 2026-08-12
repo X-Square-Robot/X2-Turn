@@ -15,7 +15,7 @@
   },
   "required_custom_architecture_fields": {
     "wrapper_class": "VoxtralMTP",
-    "wrapper_definition": "modeling_voxtral_mtp.py",
+    "wrapper_definition": "voxtral-realtime/integrations/transformers/modeling_voxtral_mtp.py",
     "base_architecture": "VoxtralRealtimeForConditionalGeneration",
     "base_model_type": "voxtral_realtime",
     "state_dict_base_prefix": "base_model.",

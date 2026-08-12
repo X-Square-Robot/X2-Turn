@@ -17,7 +17,6 @@ REQUIRED_FILES = {
     ".gitattributes",
     ".gitignore",
     "config.example.json",
-    "modeling_voxtral_mtp.py",
     "verify_model_repo.py",
 }
 
@@ -201,18 +200,11 @@ def main() -> int:
                 errors.append("turn output order does not match the release contract")
             if custom.get("frame_duration_ms") != 80:
                 errors.append("frame_duration_ms must be 80")
-
-    modeling_path = repo / "modeling_voxtral_mtp.py"
-    if modeling_path.is_file():
-        modeling = read_text(modeling_path)
-        for symbol in (
-            "class VoxtralMTPOutput",
-            "class VoxtralMTP",
-            "def load_mtp_checkpoint",
-            "self.vad_lm_head",
-        ):
-            if symbol not in modeling:
-                errors.append(f"model definition missing required symbol: {symbol}")
+            if custom.get("wrapper_definition") != (
+                "voxtral-realtime/integrations/transformers/"
+                "modeling_voxtral_mtp.py"
+            ):
+                errors.append("wrapper_definition must point to voxtral-realtime")
 
     weight_files = [
         path.relative_to(repo)

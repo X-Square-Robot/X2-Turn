@@ -2,9 +2,8 @@ from types import SimpleNamespace
 
 import torch
 import torch.nn.functional as F
-from torch import nn
-
 from modeling_voxtral_mtp import VoxtralMTP, VoxtralMTPOutput
+from torch import nn
 
 VOCAB_SIZE = 64
 HIDDEN_SIZE = 16

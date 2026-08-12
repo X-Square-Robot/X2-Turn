@@ -29,6 +29,14 @@ python -m pip install -e ".[dev]"
 
 Python 3.10 or newer is required.
 
+## Model definition
+
+The training-compatible `VoxtralMTP` wrapper and canonical-checkpoint loader
+live in
+[`integrations/transformers/`](integrations/transformers/README.md). They are
+kept with inference code so the model contract, offline path, and vLLM path can
+be versioned together.
+
 ## vLLM prerequisite
 
 Standard vLLM cannot emit `turn.delta`. Apply the pinned Apache-2.0-compatible

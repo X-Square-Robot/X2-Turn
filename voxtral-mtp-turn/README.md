@@ -126,8 +126,9 @@ versions.
 
 ## Model definition
 
-[`modeling_voxtral_mtp.py`](modeling_voxtral_mtp.py) contains the training-side
-`VoxtralMTP` definition. It wraps
+The `voxtral-realtime` code repository contains the training-side definition at
+[`integrations/transformers/modeling_voxtral_mtp.py`](../voxtral-realtime/integrations/transformers/modeling_voxtral_mtp.py).
+`VoxtralMTP` wraps
 `VoxtralRealtimeForConditionalGeneration` with:
 
 - the original `lm_head` for streaming ASR;
@@ -186,8 +187,7 @@ until every ownership, training-data, privacy, and license gate in
 3. **Tokenizer:** `tekken.json`.
 4. **Audio/processor metadata:** `processor_config.json`.
 5. **Generation defaults:** `generation_config.json`.
-6. **Model definition:** `modeling_voxtral_mtp.py`.
-7. **Repository documentation:** `README.md`, `LICENSE`, `NOTICE`, and
+6. **Repository documentation:** `README.md`, `LICENSE`, `NOTICE`, and
    `MODEL_RELEASE_CHECKLIST.md`.
 
 Do not upload optimizer states, trainer states, datasets, raw audio, local
@@ -200,11 +200,11 @@ The inspected source checkpoint metadata identifies
 `audio_length_per_tok: 8`, `default_num_delay_tokens: 6`, 16 kHz audio, and a
 12.5 Hz frame rate. It does not itself declare the additional turn head.
 
-`config.example.json` records the machine-readable wrapper contract, while
-`modeling_voxtral_mtp.py` provides its executable definition. The example
-configuration remains intentionally non-loadable and must not replace the
-checkpoint's real `config.json`. The selected `voxtral-realtime` release must
-interpret and validate this contract explicitly.
+`config.example.json` records the machine-readable wrapper contract. Its
+executable definition is versioned with `voxtral-realtime`, alongside the
+offline and vLLM inference integrations. The example configuration remains
+intentionally non-loadable and must not replace the checkpoint's real
+`config.json`.
 
 ## License and attribution
 
