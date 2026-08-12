@@ -11,133 +11,23 @@ tags:
   - turn-taking
 ---
 
-# Voxtral MTP Turn
+# X2 Turn 4B
 
-Proposed model ID: `x-square/voxtral-mtp-turn-v3-delay0-zhen`
+X2 Turn listens to speech and produces two synchronized results:
 
-This repository is a release staging area for the `final` checkpoint of
-`voxtral-mtp-turn-v3-delay0-zhen`, a derivative of
-`mistralai/Voxtral-Mini-4B-Realtime-2602`. It combines streaming automatic
-speech recognition (ASR) with a frame-level turn-taking head.
+- streaming Chinese/English transcription; and
+- one prediction every 80 ms describing whether the user is silent, still
+  speaking, finished, or only giving a short acknowledgment.
 
-> **Release gate:** the repository owner must review and approve the final release license
-> and all training-data collection, processing, and
-> redistribution rights before any public upload. The Apache-2.0 files in this
-> staging repository do not establish rights to training data or to artifacts
-> not yet added.
+It is designed for voice assistants that need to decide when to wait, reply,
+ignore a backchannel, or allow the user to interrupt.
 
-## Model behavior
+Model ID: `Kaiqfu/X2-Turn-4B-0812`
 
-Audio is processed on an approximately 80 ms frame timeline. The model emits:
+## Quick start
 
-- streaming ASR tokens for Chinese and English speech; and
-- one turn-taking output per frame from `idle`, `noidle`, `speaking`,
-  `turn_end`, and `backchannel`.
-
-The training head also reserves token id 40 for `uncertain`. The production
-turn controller does not expose that class as an application action.
-
-The ASR and turn heads share the acoustic/language backbone and run on the same
-frame sequence. Turn outputs are predictions, not deterministic voice-activity
-or endpoint guarantees. Applications should apply a separate turn controller
-or policy rather than treating a single frame as an irrevocable action.
-
-## Intended use
-
-- Research and evaluation of low-latency Mandarin, English, and mixed-language
-  streaming ASR.
-- Turn-taking experiments such as endpointing, barge-in, response timing, and
-  backchannel handling.
-- Controlled deployment behind an application-level policy, monitoring, and
-  human-reviewed privacy and safety controls.
-
-This model is not intended as the sole basis for safety-critical decisions,
-speaker identity, emotion inference, legal transcription, or covert
-surveillance.
-
-## Limitations
-
-- Accuracy may degrade with noise, reverberation, overlap, accents, dialects,
-  code-switching, far-field microphones, packet loss, or domains unlike the
-  training data.
-- Frame outputs may flicker or lag and require temporal smoothing and
-  application-specific thresholds.
-- ASR errors and turn errors can interact: incomplete transcription does not
-  necessarily imply an incomplete turn, and silence does not guarantee that a
-  speaker has yielded.
-- Real-time latency and throughput depend on hardware, serving configuration,
-  audio transport, and policy buffering.
-- Language coverage declared in this card is Chinese and English; it does not
-  imply equal performance across languages or varieties.
-
-## Privacy
-
-Speech can contain personal, biometric, confidential, and copyrighted
-information. Obtain appropriate consent and legal authority, minimize
-collection and retention, encrypt transport and storage, restrict access, and
-provide deletion and incident-response procedures. Do not log raw audio or
-transcripts by default. The owner must complete a training-data privacy and
-rights review before release.
-
-## Bias and fairness
-
-Performance may vary by accent, dialect, age, gender presentation, speaking
-style, disability, microphone, environment, language mix, and conversational
-norms. Turn-taking conventions and backchannels are culturally and
-contextually dependent. Evaluate representative subgroups and interaction
-settings, document material gaps, and avoid using model outputs to infer
-sensitive attributes.
-
-## Evaluation
-
-The following existing results were traced to the selected
-`voxtral-mtp-turn-v3-delay0-zhen/final` checkpoint. They are included as
-provisional evidence, not as a final release claim:
-
-- EasyTurn Chinese, vLLM streaming, 480 ms ASR delay: 579 scored utterances,
-  89.46% endpoint-category accuracy; 29,936 aligned frames from 533 eligible
-  examples reached 93.17% frame accuracy.
-- EasyTurn English, 480 ms ASR delay: 617 utterances reached 88.49%
-  last-non-idle endpoint-category accuracy.
-- Full-Duplex-Bench Chinese turn-taking subset: turn-end detection was 94.19%
-  over 155 examples. This is an offline turn-state surrogate, and its mean
-  timing was 309 ms before the annotated speech end.
-- Full-Duplex-Bench Chinese interruption subset: interruption detection was
-  99.38% over 161 examples, with 160 ms median and 480 ms p90 latency.
-- FastTurn stratified set: 800 utterances reached 71.13% category accuracy,
-  including 90% backchannel, 69% complete, 61% incomplete, and 89% wait.
-
-These evaluations used an 80 ms frame rate and `turn_label_delay_frames=0`.
-EasyTurn and FastTurn provenance and redistribution rights still require
-release-owner review. Full-Duplex-Bench is CC BY-NC 4.0 and is not distributed
-with this Apache-2.0 model repository. The reported Full-Duplex-Bench numbers
-must not be interpreted as granting commercial rights to its data or code.
-
-- ASR datasets and splits: **TBD before release**
-- ASR metrics (for example, CER/WER): **TBD before release**
-- Turn-taking datasets, label policy, and splits: **TBD before release**
-- Per-class and timing metrics: **TBD before release**
-- Streaming latency and hardware/software configuration: **TBD before release**
-- Subgroup, robustness, and mixed-language analysis: **TBD before release**
-
-All reported results must identify dataset rights, preprocessing, frame
-alignment, decoding settings, policy thresholds, hardware, and package
-versions.
-
-## Model definition
-
-The `voxtral-realtime` code repository provides the installable
-`voxtral_realtime.transformers` loader. It uses a regular `VoxtralMTP`
-`nn.Module` around the stock
-`VoxtralRealtimeForConditionalGeneration` with:
-
-- the original `lm_head` for streaming ASR;
-- an independent full-vocabulary `vad_lm_head` initialized from `lm_head`;
-- joint ASR and turn losses, including safe all-masked turn batches; and
-- a turn-head-only mode that freezes the shared backbone in the graph.
-
-Install the code repository and load this Hub checkpoint without modifying
-Transformers or enabling `trust_remote_code`:
+The model uses a small wrapper from the `voxtral-realtime` code repository. It
+does not modify Transformers and does not require `trust_remote_code`.
 
 ```bash
 git clone https://github.com/x-square/voxtral-realtime.git
@@ -153,8 +43,7 @@ from voxtral_realtime.transformers import (
     load_mtp_checkpoint,
 )
 
-model_id = "x-square/voxtral-mtp-turn-v3-delay0-zhen"
-audio_path = "/path/to/input.wav"
+model_id = "Kaiqfu/X2-Turn-4B-0812"
 processor = AutoProcessor.from_pretrained(model_id)
 model = load_mtp_checkpoint(
     model_id,
@@ -162,90 +51,143 @@ model = load_mtp_checkpoint(
     dtype=torch.bfloat16,
 ).eval()
 
-result = infer_asr_turn(model, processor, audio_path)
+result = infer_asr_turn(model, processor, "/path/to/input.wav")
+
 print("ASR:", result.transcript)
 for frame in result.turn_frames:
-    print(
-        frame.start_ms,
-        frame.end_ms,
-        frame.label,
-        frame.confidence,
-    )
+    print(frame.start_ms, frame.end_ms, frame.label, frame.confidence)
 ```
 
-`infer_asr_turn()` returns the transcript and one six-class turn prediction per
-80 ms frame. Internally, ASR generation uses the original Voxtral head and a
-second aligned forward pass evaluates `vad_lm_head`. The loader also accepts a
-local `final/` directory in place of `model_id`.
+`result.transcript` is the recognized text. `result.turn_frames` contains the
+turn prediction and confidence for each 80 ms frame.
 
-For a complete single-file example that prints every 80 ms turn frame and
-writes JSON, run from the `voxtral-realtime` repository:
+The loader also accepts a local checkpoint directory. A complete command-line
+example is available in the `voxtral-realtime` repository:
 
 ```bash
 python integrations/transformers/examples/offline_inference.py \
-  --model x-square/voxtral-mtp-turn-v3-delay0-zhen \
+  --model Kaiqfu/X2-Turn-4B-0812 \
   --audio /path/to/input.wav \
   --output offline_frames.json
 ```
 
-This interface is intended for checkpoint inspection, evaluation, and
-training-compatible reconstruction. Production realtime serving still uses
-the pinned vLLM overlay described below.
+## What the six outputs mean
 
-## Serving
+- `idle`: no useful speech is present.
+- `noidle`: acoustic activity is present, but intent is not yet clear.
+- `speaking`: the user is still speaking.
+- `turn_end`: the user appears to have finished and the assistant may reply.
+- `backchannel`: a short acknowledgment such as “嗯”, “对”, or “okay”.
+- `uncertain`: the model is not confident that the turn has ended.
 
-Serving support lives in the separate `voxtral-realtime` package; this model
-repository does not bundle the vLLM server. Use a version of that package that
-explicitly supports the MTP turn head, and follow its installation and server
-documentation. Do not assume that generic `transformers` or stock vLLM loading
-will automatically select the custom wrapper.
+These are predictions, not commands. Applications should smooth several frames
+and apply a policy instead of acting on one frame.
 
-Before serving, add the checkpoint's validated runtime metadata and the
-complete artifact set described below; keep `config.example.json` as
-documentation only. Pin the serving package version and validate output-label
-ordering end-to-end.
+## When to use it
 
-## Expected release artifacts
+Good fits include:
 
-The local staging directory may contain the selected canonical
-`model.safetensors` from `voxtral-mtp-turn-v3-delay0-zhen/final`, but the
-private GitLab validation repository excludes it. Do not upload the weight
-until every ownership, training-data, privacy, and license gate in
-`MODEL_RELEASE_CHECKLIST.md` has been approved.
+- low-latency Mandarin, English, and mixed-language ASR;
+- deciding when a voice assistant should respond;
+- distinguishing a real request from a backchannel;
+- endpointing, barge-in, and response-timing experiments; and
+- controlled research or product evaluation with monitoring.
 
-1. **Model weights:** `model.safetensors` containing the base model under the
-   `base_model.*` parameter namespace and the separate
-   `vad_lm_head.weight` turn head. Keep this initial release unsharded because
-   the repository loader intentionally targets the canonical file layout.
-2. **Architecture metadata:** `config.json` for the Hugging Face Voxtral
-   backbone and `params.json` for the Mistral/vLLM architecture metadata.
-   `config.example.json` documents the custom wrapper contract but is not a
-   runtime configuration.
-3. **Tokenizer:** `tekken.json`.
-4. **Audio/processor metadata:** `processor_config.json`.
-5. **Generation defaults:** `generation_config.json`.
-6. **Repository documentation:** `README.md`, `LICENSE`, `NOTICE`, and
-   `MODEL_RELEASE_CHECKLIST.md`.
+Do not use this model as the sole basis for safety-critical decisions, speaker
+identity, emotion inference, legal transcription, or covert surveillance.
 
-Do not upload optimizer states, trainer states, datasets, raw audio, local
-paths, credentials, logs, caches, or intermediate checkpoints.
+## Results at a glance
 
-## Configuration contract
+The following provisional results were traced to this checkpoint:
 
-The inspected source checkpoint metadata identifies
-`VoxtralRealtimeForConditionalGeneration`, `model_type: voxtral_realtime`,
-`audio_length_per_tok: 8`, `default_num_delay_tokens: 6`, 16 kHz audio, and a
-12.5 Hz frame rate. It does not itself declare the additional turn head.
+- EasyTurn Chinese: 89.46% endpoint-category accuracy over 579 scored
+  utterances; 93.17% frame accuracy over 29,936 aligned frames.
+- EasyTurn English: 88.49% last-non-idle endpoint-category accuracy over 617
+  utterances.
+- Full-Duplex-Bench Chinese turn-taking: 94.19% turn-end detection over 155
+  examples.
+- Full-Duplex-Bench Chinese interruption: 99.38% interruption detection over
+  161 examples, with 160 ms median and 480 ms p90 latency.
+- FastTurn stratified set: 71.13% category accuracy over 800 utterances.
 
-`config.example.json` records the machine-readable wrapper contract. The
-checkpoint keeps the stock Voxtral `config.json`; the separate
-`voxtral-realtime` loader creates the MTP wrapper before loading
-`base_model.*` and `vad_lm_head.weight`. The example configuration remains
-intentionally non-loadable and must not replace the checkpoint's real
-`config.json`.
+All results used an 80 ms frame rate and `turn_label_delay_frames=0`. They are
+provisional evidence rather than final release claims. EasyTurn and FastTurn
+provenance and redistribution rights still require owner review.
+Full-Duplex-Bench is CC BY-NC 4.0 and is not distributed with this repository.
 
-## License and attribution
+Evaluation details still required for a final public release:
 
-See `LICENSE` and `NOTICE`. The model weight is derivative of the named Mistral
-base model. Final licensing and training-data rights remain release blockers
-requiring owner review.
+- ASR datasets and splits: **TBD before release**
+- ASR metrics such as CER/WER: **TBD before release**
+- Turn-taking datasets, label policy, and splits: **TBD before release**
+- Per-class and timing metrics: **TBD before release**
+- Streaming latency and hardware/software configuration: **TBD before release**
+- Subgroup, robustness, and mixed-language analysis: **TBD before release**
+
+## Limitations
+
+- Noise, reverberation, overlapping speakers, accents, dialects, code-switching,
+  far-field microphones, and packet loss may reduce accuracy.
+- Turn predictions may flicker or arrive early/late and need temporal
+  smoothing.
+- ASR errors and turn errors can interact. Incomplete text does not always mean
+  an incomplete turn, and silence does not guarantee that the user yielded.
+- Performance may vary across demographic groups, speaking styles, languages,
+  microphones, environments, and conversational norms.
+- Real-time latency depends on hardware, serving configuration, transport, and
+  policy buffering.
+
+Speech may contain personal, biometric, confidential, or copyrighted
+information. Obtain appropriate consent, minimize collection and retention,
+protect stored data, and avoid logging raw audio or transcripts by default.
+
+## Realtime serving
+
+Production realtime serving uses the separate `voxtral-realtime` package and a
+pinned vLLM overlay. Stock vLLM does not emit the custom `turn.delta` events.
+Follow the vLLM integration guide in the code repository before serving.
+
+For a focused browser visualization of ASR, turn frames, and
+ACCEPT/REJECT/HOLD/barge-in decisions, use the standalone `turn-demo`
+component. The full dialogue demo additionally connects an LLM and TTS.
+
+## Technical details
+
+The checkpoint is derived from
+`mistralai/Voxtral-Mini-4B-Realtime-2602`. It keeps the original shared
+backbone and ASR `lm_head`, and adds an independent full-vocabulary
+`vad_lm_head`.
+
+Turn labels occupy reserved tokenizer IDs 35 through 40 in this exact order:
+`idle`, `noidle`, `speaking`, `turn_end`, `backchannel`, `uncertain`.
+
+The canonical `model.safetensors` stores:
+
+- the backbone and ASR head under `base_model.*`; and
+- the turn head as `vad_lm_head.weight`.
+
+The checkpoint keeps the stock Voxtral `config.json`. The
+`voxtral_realtime.transformers` loader creates the `VoxtralMTP` wrapper before
+loading both heads. `config.example.json` documents this contract but is not a
+loadable replacement for `config.json`.
+
+The initial release should remain unsharded because the repository loader
+targets the canonical single-file layout. Runtime metadata also includes
+`params.json`, `tekken.json`, `processor_config.json`, and
+`generation_config.json`.
+
+## Release status and license
+
+The legacy proposed ID `x-square/voxtral-mtp-turn-v3-delay0-zhen` refers to the
+same selected `voxtral-mtp-turn-v3-delay0-zhen/final` checkpoint. The intended
+Hub destination is `Kaiqfu/X2-Turn-4B-0812`.
+
+Before public upload, the release owner must approve the final release license,
+Mistral base-model terms, attribution, and all training-data collection,
+processing, privacy, consent, and redistribution rights. The Apache-2.0 files
+in this staging repository do not by themselves establish rights to the model
+weights or training data.
+
+Do not upload optimizer state, trainer state, datasets, raw audio, transcripts,
+credentials, logs, caches, private paths, or intermediate checkpoints. See
+`MODEL_RELEASE_CHECKLIST.md`, `LICENSE`, and `NOTICE`.
