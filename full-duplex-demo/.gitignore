@@ -37,8 +37,6 @@ certs/
 .pytest_cache/
 .ruff_cache/
 
-# Downloaded third-party model artifacts
-dialogue_system/modules/index_tts_vllm/indextts/utils/maskgct/models/codec/facodec/modules/JDC/bst.t7
 # C extensions
 *.so
 

@@ -33,15 +33,9 @@ Python 3.10 or newer is required.
 
 Standard vLLM cannot emit `turn.delta`. Apply the pinned Apache-2.0-compatible
 overlay documented in [`integrations/vllm/README.md`](integrations/vllm/README.md)
-before serving. Run the resulting vLLM build that supports Voxtral Mini Realtime 2602 and the
-`/v1/realtime` endpoint. Obtain model weights separately; they are not included
-in this repository. The canonical training checkpoint is `voxtral-mtp-turn-v3-delay0-zhen/final`;
-convert it to the `final_vllm` layout using the packaged export tool, then serve it
-under the public identifier:
-
-```text
-x-square/voxtral-mtp-turn-v3-delay0-zhen
-```
+before serving. That guide owns the pinned vLLM revision, overlay installation,
+checkpoint export, and serving commands. Model weights are distributed
+separately.
 
 The bridge defaults to `ws://127.0.0.1:8011/v1/realtime`. Configure the served
 model and URL without embedding local model paths:
@@ -60,6 +54,20 @@ voxtral-realtime serve --model x-square/voxtral-mtp-turn-v3-delay0-zhen \
 ```
 
 See `.env.example` for common environment settings.
+
+## Offline WAV example
+
+Replay a PCM WAV through the production acoustic gate and turn controller
+without starting the dialogue demo:
+
+```bash
+python examples/offline_inference.py \
+  --audio /path/to/input.wav \
+  --output-dir offline_output
+```
+
+See [`examples/README.md`](examples/README.md) for vLLM prerequisites, output
+schemas, realtime pacing, and barge-in evaluation.
 
 ## Python API
 

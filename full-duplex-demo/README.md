@@ -9,7 +9,7 @@ The frontend and dialogue service were originally based on
 Model weights, CosyVoice source, recordings, logs, and evaluation datasets are
 not distributed in this repository.
 
-## Architecture
+## Service map
 
 ```text
 Browser (HTTPS :8443)
@@ -21,10 +21,13 @@ Browser (HTTPS :8443)
        └─ Streaming TTS HTTP :6017
 ```
 
-The frame controller preserves the existing 80 ms full-duplex behavior:
-semantic barge-in, endpoint confirmation, acoustic endpoint veto, delayed ASR
-tail collection, short-utterance handling, and backchannel policy. See
-`DEMO_STATE_MACHINE.md` and `DEMO_SYSTEM_SUMMARY.md`.
+Detailed design:
+
+- [`docs/ARCHITECTURE.zh.md`](docs/ARCHITECTURE.zh.md): end-to-end pipeline,
+  generation epochs, streaming TTS, and current limitations.
+- [`docs/STATE_MACHINE.md`](docs/STATE_MACHINE.md): 80 ms turn labels,
+  endpoint confirmation, acoustic veto, and backchannel policy.
+- [`docs/BRAND_ASSETS.md`](docs/BRAND_ASSETS.md): logo and trademark boundary.
 
 ## Requirements
 
@@ -118,6 +121,13 @@ COSY_ROOT=/path/to/CosyVoice docker compose --profile cosyvoice up
 ```
 
 Compose is a deployment template; CUDA images and model caches vary by host.
+
+## Offline inference
+
+The demo does not bundle evaluation datasets or a second offline dialogue
+pipeline. For a standalone PCM WAV example that produces ASR and turn-state
+JSON, use
+[`../voxtral-realtime/examples/README.md`](../voxtral-realtime/examples/README.md).
 
 ## Licensing and brand assets
 

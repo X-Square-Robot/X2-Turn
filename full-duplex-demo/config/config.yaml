@@ -1,6 +1,0 @@
-# Offline eval audio chunking (used by dialogue_system/offline_infer.py)
-infer_config:
-  developer_mode: false
-  input:
-    chunk_size: 2560
-    sample_rate: 16000

@@ -21,7 +21,7 @@ Browser (:8443)
 ### 1.1 推理：80ms 一帧、一状态
 
 Voxtral MTP turn 头在流式推理时，与 ASR 共用 **80ms 延迟流** 时间轴。  
-vLLM realtime 每个 `turn.delta` 带 `frame_index`，表示**第几个 80ms 帧**的状态，六类之一：
+vLLM realtime 每个 `turn.delta` 带 `frame_index`，表示**第几个 80ms 帧**的状态，五类之一：
 
 | ID | 类名 | 含义（训练语义） |
 |----|------|------------------|
@@ -91,7 +91,9 @@ BARGE_IMMEDIATE = {speaking, turn_end}   # Bot 在播时
 **① Bot 在播 TTS（`bot_speaking=True`）**
 
 - 切换到 `barge_commit_ms=80`，**跳过 lead-in 能量门控**，用户音频立刻进 vLLM
-- turn 模型输出 `speaking` / `turn_end` → **立刻** `nonidle`（`barge_in`）；`noidle` 不打断
+- bridge 会保留 `speaking` / `turn_end` 的语义 barge 信息；Demo 应用只在
+  PCM 已经播放且持续判断为 `speaking` 时停止音频，以降低扬声器回声误打断
+- `noidle` 不单独触发打断
 - 仍是 **turn 模型决策**，不是前端 RMS 阈值
 
 **② 附和拒识**
@@ -124,16 +126,16 @@ BARGE_IMMEDIATE = {speaking, turn_end}   # Bot 在播时
 ### 2.4 示例时间线
 
 ```
-帧:     idle idle | bc | idle | noidle | speaking … | turn_end | idle idle idle idle
+帧:     idle idle | bc | idle | noidle | speaking … | turn_end | idle
 X Square:  idle idle | idle(reject) | idle | nonidle | nonidle … | nonidle(pending) | speak
-                                              ↑                              ↑ N=4 帧后 ACCEPT
+                                              ↑                         ↑ N=1 帧后 ACCEPT
 ```
 
 若模型未出 `turn_end`：
 
 ```
-帧:     … speaking speaking | idle idle … (K=8) …
-X Square:  … nonidle …         | silence_run 1..8 → speak (silence_end)
+帧:     … speaking speaking | idle idle idle …
+X Square:  … nonidle …         | silence_run 1..3 → speak (silence_end)
 ```
 
 ---
@@ -158,21 +160,7 @@ Bridge 也可收 `type=control` + `bot_speaking`（备用）。
 
 ---
 
-## 4. 与历史离线 policy 的关系
-
-| | policy.py（离线/可视化） | X Square 帧控制器 |
-|--|-------------------------|----------------|
-| 输入 | 字→帧展开后的序列 | 原生 `turn.delta` + `frame_index` |
-| 打断 | `bot_speaking` 时连续 K 帧 speech | Bot 播时单帧 `speaking`/`turn_end` 即 barge；`noidle` 不打断 |
-| 接话 | 末帧 turn 类 | N 帧 confirm turn_end + K 帧 silence 软 end |
-| noidle | 参与 barge 计数 | 参与 HOLD，Bot 播时不单独 barge |
-
-历史 policy 仍可用于离线评测；**X Square live 使用独立
-`voxtral_realtime.turn.controller`**。
-
----
-
-## 5. 源码索引
+## 4. 源码索引
 
 | 文件 | 内容 |
 |------|------|
@@ -183,7 +171,7 @@ Bridge 也可收 `type=control` + `bot_speaking`（备用）。
 
 ---
 
-## 6. 部署备注
+## 5. 部署备注
 
 - VAD 模型：`x-square/voxtral-mtp-turn-v3-delay0-zhen`
 - TTS：CosyVoice2 `:6017`（`TTS_API_URL`）
