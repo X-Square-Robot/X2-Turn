@@ -5,7 +5,7 @@ Private validation monorepo for three independently publishable components.
 | Component | Purpose | Documentation |
 | --- | --- | --- |
 | `voxtral-realtime` | Realtime ASR/turn package, controller, vLLM MTP overlay, and offline WAV example | [Core README](voxtral-realtime/README.md) |
-| `voxtral-mtp-turn` | Model Hub metadata and release checklist for `voxtral-mtp-turn-v3-delay0-zhen` | [Model card](voxtral-mtp-turn/README.md) |
+| `voxtral-mtp-turn` | Model definition, Model Hub metadata, and release checklist for `voxtral-mtp-turn-v3-delay0-zhen` | [Model card](voxtral-mtp-turn/README.md) |
 | `full-duplex-demo` | Browser UI with optional Qwen and CosyVoice/Edge-TTS services | [Demo README](full-duplex-demo/README.md) |
 
 ## Start here

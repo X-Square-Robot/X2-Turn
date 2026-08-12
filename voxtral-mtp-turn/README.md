@@ -34,6 +34,9 @@ Audio is processed on an approximately 80 ms frame timeline. The model emits:
 - one turn-taking output per frame from `idle`, `noidle`, `speaking`,
   `turn_end`, and `backchannel`.
 
+The training head also reserves token id 40 for `uncertain`. The production
+turn controller does not expose that class as an application action.
+
 The ASR and turn heads share the acoustic/language backbone and run on the same
 frame sequence. Turn outputs are predictions, not deterministic voice-activity
 or endpoint guarantees. Applications should apply a separate turn controller
@@ -121,14 +124,42 @@ All reported results must identify dataset rights, preprocessing, frame
 alignment, decoding settings, policy thresholds, hardware, and package
 versions.
 
+## Model definition
+
+[`modeling_voxtral_mtp.py`](modeling_voxtral_mtp.py) contains the training-side
+`VoxtralMTP` definition. It wraps
+`VoxtralRealtimeForConditionalGeneration` with:
+
+- the original `lm_head` for streaming ASR;
+- an independent full-vocabulary `vad_lm_head` initialized from `lm_head`;
+- joint ASR and turn losses, including safe all-masked turn batches; and
+- a turn-head-only mode that freezes the shared backbone in the graph.
+
+Rebuild the canonical `final` checkpoint with:
+
+```python
+import torch
+
+from modeling_voxtral_mtp import load_mtp_checkpoint
+
+model = load_mtp_checkpoint(
+    "/path/to/voxtral-mtp-turn-v3-delay0-zhen/final",
+    device="cuda",
+    dtype=torch.bfloat16,
+).eval()
+```
+
+This definition is intended for checkpoint inspection, evaluation, and
+training-compatible reconstruction. Production serving still uses the pinned
+vLLM overlay described below.
+
 ## Serving
 
 Serving support lives in the separate `voxtral-realtime` package; this model
-repository does not bundle serving code. Use a version of that package that
+repository does not bundle the vLLM server. Use a version of that package that
 explicitly supports the MTP turn head, and follow its installation and server
 documentation. Do not assume that generic `transformers` or stock vLLM loading
-will understand the custom turn head or the example configuration in this
-staging repository.
+will automatically select the custom wrapper.
 
 Before serving, add the checkpoint's validated runtime metadata and the
 complete artifact set described below; keep `config.example.json` as
@@ -155,7 +186,8 @@ until every ownership, training-data, privacy, and license gate in
 3. **Tokenizer:** `tekken.json`.
 4. **Audio/processor metadata:** `processor_config.json`.
 5. **Generation defaults:** `generation_config.json`.
-6. **Repository documentation:** `README.md`, `LICENSE`, `NOTICE`, and
+6. **Model definition:** `modeling_voxtral_mtp.py`.
+7. **Repository documentation:** `README.md`, `LICENSE`, `NOTICE`, and
    `MODEL_RELEASE_CHECKLIST.md`.
 
 Do not upload optimizer states, trainer states, datasets, raw audio, local
@@ -168,12 +200,11 @@ The inspected source checkpoint metadata identifies
 `audio_length_per_tok: 8`, `default_num_delay_tokens: 6`, 16 kHz audio, and a
 12.5 Hz frame rate. It does not itself declare the additional turn head.
 
-`config.example.json` therefore records the required custom wrapper contract:
-dual ASR/turn heads, the `vad_lm_head` parameter prefix, 80 ms frames, output
-label order, and base Voxtral architecture identifiers. It is intentionally
-marked non-loadable. It must not replace the checkpoint's real `config.json`;
-the selected `voxtral-realtime` release must interpret and validate this
-contract explicitly.
+`config.example.json` records the machine-readable wrapper contract, while
+`modeling_voxtral_mtp.py` provides its executable definition. The example
+configuration remains intentionally non-loadable and must not replace the
+checkpoint's real `config.json`. The selected `voxtral-realtime` release must
+interpret and validate this contract explicitly.
 
 ## License and attribution
 

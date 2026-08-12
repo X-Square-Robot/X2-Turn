@@ -28,8 +28,10 @@ owner must record evidence and approval for every applicable item.
       against the exported weights.
 - [ ] Replace the documentation-only `config.example.json` only if the serving
       package requires a validated `config.json`.
+- [ ] Run the model-definition unit tests and reconstruct the canonical
+      checkpoint with `load_mtp_checkpoint`.
 - [ ] Verify the output-label order is exactly `idle`, `noidle`, `speaking`,
-      `turn_end`, `backchannel`.
+      `turn_end`, `backchannel`, `uncertain`.
 - [ ] Verify the frame duration is 80 ms end-to-end.
 - [ ] Generate and archive file hashes and artifact sizes.
 - [ ] Scan all files for secrets, credentials, usernames, hostnames, private

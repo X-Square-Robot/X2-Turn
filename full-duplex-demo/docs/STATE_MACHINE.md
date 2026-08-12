@@ -21,7 +21,7 @@ Browser (:8443)
 ### 1.1 推理：80ms 一帧、一状态
 
 Voxtral MTP turn 头在流式推理时，与 ASR 共用 **80ms 延迟流** 时间轴。  
-vLLM realtime 每个 `turn.delta` 带 `frame_index`，表示**第几个 80ms 帧**的状态，五类之一：
+vLLM realtime 每个 `turn.delta` 带 `frame_index`，表示**第几个 80ms 帧**的状态，六类之一：
 
 | ID | 类名 | 含义（训练语义） |
 |----|------|------------------|
@@ -30,6 +30,7 @@ vLLM realtime 每个 `turn.delta` 带 `frame_index`，表示**第几个 80ms 帧
 | 37 | `speaking` | 用户正在说、句未结束 |
 | 38 | `turn_end` | 可接话/句末 |
 | 39 | `backchannel` | 附和，不当完整一轮 |
+| 40 | `uncertain` | 训练侧保留的不确定状态；应用层不直接执行动作 |
 
 **不是**「一个字一个状态」。ASR 仍按字/词出 `transcription.delta`，但 turn 是 **parallel 80ms 帧序列**。
 

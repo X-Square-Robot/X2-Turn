@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the documentation-only model repository staging layout."""
+"""Validate the model repository staging layout."""
 
 from __future__ import annotations
 
@@ -9,7 +9,6 @@ import re
 import sys
 from pathlib import Path
 
-
 REQUIRED_FILES = {
     "README.md",
     "LICENSE",
@@ -18,6 +17,7 @@ REQUIRED_FILES = {
     ".gitattributes",
     ".gitignore",
     "config.example.json",
+    "modeling_voxtral_mtp.py",
     "verify_model_repo.py",
 }
 
@@ -33,7 +33,14 @@ WEIGHT_SUFFIXES = {
     ".msgpack",
 }
 
-EXPECTED_OUTPUTS = ["idle", "noidle", "speaking", "turn_end", "backchannel"]
+EXPECTED_OUTPUTS = [
+    "idle",
+    "noidle",
+    "speaking",
+    "turn_end",
+    "backchannel",
+    "uncertain",
+]
 
 EXPECTED_FRONTMATTER = {
     "license": "apache-2.0",
@@ -83,15 +90,10 @@ def scalar_value(yaml_text: str, key: str) -> str | None:
 
 
 def list_values(yaml_text: str, key: str) -> list[str]:
-    match = re.search(
-        rf"(?ms)^{re.escape(key)}:\s*\n((?:  - [^\n]+\n?)+)", yaml_text
-    )
+    match = re.search(rf"(?ms)^{re.escape(key)}:\s*\n((?:  - [^\n]+\n?)+)", yaml_text)
     if not match:
         return []
-    return [
-        line.removeprefix("  - ").strip()
-        for line in match.group(1).splitlines()
-    ]
+    return [line.removeprefix("  - ").strip() for line in match.group(1).splitlines()]
 
 
 def iter_repository_files(repo: Path):
@@ -178,6 +180,7 @@ def main() -> int:
             custom = example.get("required_custom_architecture_fields", {})
             required_custom = {
                 "wrapper_class",
+                "wrapper_definition",
                 "base_architecture",
                 "base_model_type",
                 "state_dict_base_prefix",
@@ -198,6 +201,18 @@ def main() -> int:
                 errors.append("turn output order does not match the release contract")
             if custom.get("frame_duration_ms") != 80:
                 errors.append("frame_duration_ms must be 80")
+
+    modeling_path = repo / "modeling_voxtral_mtp.py"
+    if modeling_path.is_file():
+        modeling = read_text(modeling_path)
+        for symbol in (
+            "class VoxtralMTPOutput",
+            "class VoxtralMTP",
+            "def load_mtp_checkpoint",
+            "self.vad_lm_head",
+        ):
+            if symbol not in modeling:
+                errors.append(f"model definition missing required symbol: {symbol}")
 
     weight_files = [
         path.relative_to(repo)

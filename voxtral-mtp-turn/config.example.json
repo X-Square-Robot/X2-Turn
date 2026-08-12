@@ -15,6 +15,7 @@
   },
   "required_custom_architecture_fields": {
     "wrapper_class": "VoxtralMTP",
+    "wrapper_definition": "modeling_voxtral_mtp.py",
     "base_architecture": "VoxtralRealtimeForConditionalGeneration",
     "base_model_type": "voxtral_realtime",
     "state_dict_base_prefix": "base_model.",
@@ -28,7 +29,8 @@
       "noidle": 36,
       "speaking": 37,
       "turn_end": 38,
-      "backchannel": 39
+      "backchannel": 39,
+      "uncertain": 40
     }
   },
   "audio_contract": {
