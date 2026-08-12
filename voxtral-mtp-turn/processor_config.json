@@ -1,0 +1,15 @@
+{
+  "feature_extractor": {
+    "feature_extractor_type": "VoxtralRealtimeFeatureExtractor",
+    "feature_size": 128,
+    "global_log_mel_max": 1.5,
+    "hop_length": 160,
+    "n_fft": 400,
+    "padding_side": "right",
+    "padding_value": 0.0,
+    "return_attention_mask": true,
+    "sampling_rate": 16000,
+    "win_length": 400
+  },
+  "processor_class": "VoxtralRealtimeProcessor"
+}

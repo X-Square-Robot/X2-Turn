@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cosyvoice-vllm-plugin"
+version = "0.1.0"
+description = "Registers CosyVoice2ForCausalLM with vLLM in every process"
+
+[project.entry-points."vllm.general_plugins"]
+cosyvoice2_register = "cosyvoice_vllm_plugin:register"
+
+[tool.setuptools]
+packages = ["cosyvoice_vllm_plugin"]

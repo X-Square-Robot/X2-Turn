@@ -1,0 +1,13 @@
+Voxtral MTP Turn
+Copyright 2026 X Square contributors
+
+This work is based on mistralai/Voxtral-Mini-4B-Realtime-2602 from Mistral AI.
+Any model weights distributed with this repository are derivative weights of
+that base model.
+
+Mistral and Voxtral names and any associated marks belong to their respective
+owners. This attribution does not imply endorsement.
+
+Before public distribution, the repository owner must verify the base model's
+applicable license and notice obligations and approve the final release license
+and all training-data rights.

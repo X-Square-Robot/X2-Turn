@@ -1,0 +1,12 @@
+# Model weights stay local until release approval and Model Hub publication.
+voxtral-mtp-turn/*.safetensors
+voxtral-mtp-turn/*.bin
+
+# Local runtime artifacts.
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.ruff_cache/
+**/*.egg-info/
+full-duplex-demo/logs/
+full-duplex-demo/certs/
