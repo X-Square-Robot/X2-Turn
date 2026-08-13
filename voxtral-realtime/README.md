@@ -28,6 +28,8 @@ python -m pip install -e ".[dev]"
 ```
 
 Python 3.10 or newer is required.
+For a ready-made Miniforge environment, see
+[`../environments/environment-transformers.yml`](../environments/environment-transformers.yml).
 
 ## Model definition
 

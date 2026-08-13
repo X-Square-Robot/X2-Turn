@@ -20,6 +20,13 @@ python -m pip install -e "voxtral-realtime[transformers]"
 python -m pip install -e "turn-demo[dev]"
 ```
 
+Alternatively, create the shared Miniforge environment from the monorepo root:
+
+```bash
+conda env create -f environments/environment-transformers.yml
+conda activate x2-turn
+```
+
 ## Start with local Transformers
 
 Use either a Hugging Face model ID or a local checkpoint directory:

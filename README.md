@@ -9,7 +9,14 @@ predictions instead of treating a single frame as an irreversible action.
 
 ## Quick start: one audio file
 
-Install the local Transformers integration:
+Recommended Miniforge setup, run from the repository root:
+
+```bash
+conda env create -f environments/environment-transformers.yml
+conda activate x2-turn
+```
+
+Or install the local Transformers integration with pip:
 
 ```bash
 cd voxtral-realtime
@@ -71,6 +78,11 @@ python voxtral-realtime/integrations/transformers/examples/offline_inference.py 
 - [`full-duplex-demo/`](full-duplex-demo/README.md) is the browser-based
   full-duplex dialogue demo that combines X2 Turn with optional LLM and TTS
   services.
+
+[`environments/`](environments/README.md) provides separate Miniforge
+environments for local Transformers inference, patched vLLM, and the
+full-duplex dialogue stack. Keeping these environments separate avoids most
+Torch and CUDA dependency conflicts.
 
 For realtime serving, follow the
 [`vLLM integration guide`](voxtral-realtime/integrations/vllm/README.md).

@@ -50,6 +50,10 @@ pip install -e '.[tts]'
 pip install -e ./cosyvoice_vllm_plugin
 ```
 
+For Miniforge users, the monorepo provides separate dialogue and patched-vLLM
+environments in [`../environments/`](../environments/README.md). CosyVoice
+should still use its upstream-recommended environment.
+
 Follow the upstream CosyVoice installation instructions inside its own
 checkout. Do not copy that source tree into this repository.
 

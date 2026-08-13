@@ -19,6 +19,10 @@ jobs:
           python -m pip install -e "./voxtral-realtime[dev,transformers]"
           python -m pip install -e "./turn-demo[dev]"
           python -m pip install -e "./full-duplex-demo[demo,dev]"
+      - name: Validate Miniforge environments
+        run: |
+          ruff check scripts/check_environments.py
+          python scripts/check_environments.py
       - name: Validate core
         working-directory: voxtral-realtime
         run: |

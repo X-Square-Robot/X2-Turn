@@ -1,0 +1,11 @@
+name: x2-turn
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - ffmpeg
+  - libsndfile
+  - pip:
+      - -e ./voxtral-realtime[transformers]
+      - -e ./turn-demo
