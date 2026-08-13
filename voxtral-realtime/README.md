@@ -70,6 +70,11 @@ voxtral-realtime serve --model Kaiqfu/X2-Turn-4B-0812 \
 
 See `.env.example` for common environment settings.
 
+Set `VOXTRAL_TRACE_JSONL=/private/path/turn_trace.jsonl` to append a versioned
+record for every consumed turn frame. The trace contains probabilities,
+incremental ASR, acoustic activity, bot state, and controller output, but no raw
+audio. Tracing is disabled by default in the core package.
+
 ## Offline WAV example
 
 Replay a PCM WAV through the production acoustic gate and turn controller

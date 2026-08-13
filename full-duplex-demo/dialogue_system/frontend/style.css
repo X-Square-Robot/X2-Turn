@@ -655,6 +655,11 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.conversation-turn.live .conversation-turn-header {
+  color: #0284c7;
+  font-weight: 700;
+}
+
 .conversation-message {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr);

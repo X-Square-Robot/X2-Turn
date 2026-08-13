@@ -25,6 +25,7 @@ class RealtimeConfig:
     lead_in_preroll_ms: int = 320
     lead_in_hold_ms: int = 80
     suppress_idle_text: bool = True
+    trace_jsonl: str = ""
     session_ttl_sec: float = 60.0
     gc_interval_sec: float = 10.0
     end_confirm_frames: int = 1

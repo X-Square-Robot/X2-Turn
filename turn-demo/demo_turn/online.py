@@ -1,14 +1,14 @@
-"""Online streaming session: 麦克风/分块 PCM → 增量 ASR + turn 决策。
+"""Online streaming session: 麦克风/分块 PCM → 增量 ASR + turn 状态。
 
 实现说明
 ---------
 本模块是本地 Transformers 后端的演示路径，使用:
 
   **HF ONLINE processor 分块 ingest + 对累计缓冲做增量解码**
-  （短句/体验打断拒识足够；与 offline 对齐口径一致）
+  （适合观察短句的原始 ASR 与 Turn 状态；与 offline 对齐口径一致）
 
 每 ``commit_ms``（默认 320ms）对当前缓冲跑一次 ``engine.infer_wav``，
-把新的 ASR / turn / policy 事件推给前端。
+把新的 ASR / turn 状态推给前端。
 
 生产流式路径请使用带 X2 Turn overlay 的 vLLM ``/v1/realtime``；对应实现位于
 ``online_vllm.py``，可以直接接收 6 类 ``turn.delta``。
@@ -24,24 +24,19 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 
 from demo_turn.engine import TurnDemoEngine, UtterancePred
-from demo_turn.policy import DemoDecision, PolicyConfig, run_policy_on_frames
-from demo_turn.viz import decision_banner, events_table, timeline_html
+from demo_turn.viz import frame_table_html, timeline_html
 
 
 @dataclass
 class StreamUpdate:
     kind: str  # partial | final
     asr_text: str
-    action: str
     last_turn: str
-    reason: str
-    barge_in_at_s: Optional[float]
     duration_s: float
     n_frames: int
     turn_hist: Dict[str, int]
-    banner_html: str
     timeline_html: str
-    events_html: str
+    frames_html: str
     turns: List[str]
     elapsed_infer_ms: float
 
@@ -55,17 +50,15 @@ class OnlineTurnSession:
     def __init__(
         self,
         engine: TurnDemoEngine,
-        bot_speaking: bool = False,
-        barge_in_frames: int = 4,
         commit_ms: int = 320,
         max_buffer_s: float = 20.0,
         lock: Optional[threading.Lock] = None,
     ):
         self.engine = engine
         self.sr = int(engine.sr)
-        self.bot_speaking = bool(bot_speaking)
-        self.cfg = PolicyConfig(barge_in_frames=int(barge_in_frames))
-        self.commit_samples = max(int(self.sr * commit_ms / 1000.0), int(self.sr * 0.08))
+        self.commit_samples = max(
+            int(self.sr * commit_ms / 1000.0), int(self.sr * 0.08)
+        )
         self.max_buffer_samples = int(self.sr * max_buffer_s)
         self.lock = lock
 
@@ -126,35 +119,21 @@ class OnlineTurnSession:
 
     def _pack(self, pred: UtterancePred, kind: str, infer_ms: float) -> StreamUpdate:
         turns = [f.turn for f in pred.frames]
-        decision: DemoDecision = run_policy_on_frames(
-            turns=turns,
-            turn_probs=[f.turn_prob for f in pred.frames],
-            asr_tokens=[f.asr for f in pred.frames],
-            seconds_per_token=pred.seconds_per_token,
-            bot_speaking=self.bot_speaking,
-            cfg=self.cfg,
-            asr_text=pred.asr_text,
-        )
         hist = {}
         for t in turns:
             hist[t] = hist.get(t, 0) + 1
         return StreamUpdate(
             kind=kind,
             asr_text=pred.asr_text,
-            action=decision.action,
-            last_turn=decision.last_turn,
-            reason=decision.reason,
-            barge_in_at_s=decision.barge_in_at_s,
+            last_turn=turns[-1] if turns else "idle",
             duration_s=pred.duration_s,
             n_frames=len(pred.frames),
             turn_hist=hist,
-            banner_html=decision_banner(decision),
             timeline_html=timeline_html(
                 turns,
                 seconds_per_token=pred.seconds_per_token,
-                barge_in_at_s=decision.barge_in_at_s,
             ),
-            events_html=events_table(decision.events, only_interesting=True),
+            frames_html=frame_table_html(pred.frames),
             turns=turns,
             elapsed_infer_ms=round(infer_ms, 1),
         )

@@ -151,9 +151,10 @@ Production realtime serving uses the separate `voxtral-realtime` package and a
 pinned vLLM overlay. Stock vLLM does not emit the custom `turn.delta` events.
 Follow the vLLM integration guide in the code repository before serving.
 
-For a focused browser visualization of ASR, turn frames, and
-ACCEPT/REJECT/HOLD/barge-in decisions, use the standalone `turn-demo`
-component. The full dialogue demo additionally connects an LLM and TTS.
+For a focused browser visualization of raw ASR, 80 ms Turn frames, and the
+frame-level token/class/probability table, use the standalone `turn-demo`
+component. It intentionally applies no response or barge-in policy. The full
+dialogue demo additionally connects an LLM and TTS.
 
 ## Technical details
 

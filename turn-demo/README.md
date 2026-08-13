@@ -6,7 +6,7 @@ TTS service. Upload or record speech to see:
 - streaming ASR text;
 - one six-class turn prediction every 80 ms;
 - the turn timeline and class histogram;
-- `ACCEPT`, `REJECT`, `HOLD`, and simulated barge-in decisions.
+- a raw frame table with frame time, ASR token, Turn class, and probability.
 
 The six model outputs are `idle`, `noidle`, `speaking`, `turn_end`,
 `backchannel`, and `uncertain`.
@@ -67,14 +67,14 @@ incremental ASR and turn frames. The local Transformers backend repeatedly
 decodes the accumulated microphone buffer and is intended for demonstration,
 not latency benchmarking.
 
-## Decision policy
+## Raw model outputs
 
-- While the bot is not speaking, the final non-idle class determines the
-  result: `turn_end` becomes `ACCEPT`, `backchannel` becomes `REJECT`, and
-  `speaking`/`uncertain`/`noidle` becomes `HOLD`.
-- While simulated bot TTS is active, four consecutive `noidle` or `speaking`
-  frames trigger barge-in by default. A `backchannel` does not interrupt.
-- These are demo defaults, not universal product thresholds.
+The demo intentionally does not convert Turn states into product actions. It
+shows the model's raw ASR text, six-class frame timeline, latest state, and
+class histogram. The frame-level text analysis table remains available, but it
+contains only frame time, ASR token, Turn class, and probability—no action or
+decision column. Applications should define their own response, rejection, and
+barge-in policies for their latency and interaction requirements.
 
 Optional scenario JSONL files can be supplied with `--test_jsonl`. No dataset,
 audio, or internal evaluation path is bundled with this repository, so the

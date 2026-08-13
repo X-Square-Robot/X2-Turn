@@ -172,6 +172,10 @@ else
 fi
 
 require_command "$VOXTRAL_CLI"
+if [[ -z "${VOXTRAL_TRACE_JSONL+x}" ]]; then
+  VOXTRAL_TRACE_JSONL="$LOG_DIR/turn_trace.jsonl"
+fi
+export VOXTRAL_TRACE_JSONL
 echo "[3b/4] Turn bridge :0.0.0.0:8000 (voxtral-realtime, forwards to vLLM)"
 nohup "$VOXTRAL_CLI" serve \
   --vllm-url "ws://127.0.0.1:$VLLM_PORT/v1/realtime" \

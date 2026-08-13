@@ -30,8 +30,7 @@ from demo_turn.engine_vllm import (
     frames_to_utterance,
 )
 from demo_turn.online import StreamUpdate
-from demo_turn.policy import DemoDecision, PolicyConfig, run_policy_on_frames
-from demo_turn.viz import decision_banner, events_table, timeline_html
+from demo_turn.viz import frame_table_html, timeline_html
 
 # Turns that mean "user has started speaking" for text gating.
 _SPEECH_TURNS: Set[str] = {
@@ -51,10 +50,7 @@ class OnlineVLLMSession:
         *,
         vllm_url: str = DEFAULT_VLLM_URL,
         model: str,
-        bot_speaking: bool = False,
-        barge_in_frames: int = 4,
         commit_ms: int = 320,
-        barge_commit_ms: int = 80,
         sr: int = 16000,
         seconds_per_token: float = DEFAULT_SECONDS_PER_TOKEN,
         delay_ms: int = 480,
@@ -71,13 +67,7 @@ class OnlineVLLMSession:
         self.seconds_per_token = float(seconds_per_token)
         self.delay_ms = int(delay_ms)
         self.turn_delay = max(0, int(turn_label_delay_frames))
-        self.bot_speaking = bool(bot_speaking)
-        self.cfg = PolicyConfig(barge_in_frames=int(barge_in_frames))
-        self.normal_commit_ms = max(int(commit_ms), 80)
-        self.barge_commit_ms = max(int(barge_commit_ms), 80)
-        self.commit_ms = (
-            self.barge_commit_ms if self.bot_speaking else self.normal_commit_ms
-        )
+        self.commit_ms = max(int(commit_ms), 80)
 
         self.lead_in_gate = bool(lead_in_gate)
         self.lead_in_rms = float(lead_in_rms)
@@ -106,31 +96,12 @@ class OnlineVLLMSession:
         self._preroll_n = 0
         self._speech_run = 0
 
-    def set_bot_speaking(self, speaking: bool) -> None:
-        """Switch to fast turn polling while bot TTS plays (barge-in window)."""
-        speaking = bool(speaking)
-        if speaking == self.bot_speaking:
-            return
-        self.bot_speaking = speaking
-        if speaking:
-            self.commit_ms = self.barge_commit_ms
-            # Skip lead-in gate: user barge must reach vLLM immediately.
-            self._gate_open = True
-            self._preroll.clear()
-            self._preroll_n = 0
-            self._speech_run = 0
-            self._last_pack_t = 0.0
-        else:
-            self.commit_ms = self.normal_commit_ms
-
     async def connect(self) -> None:
         self._ws = await websockets.connect(self.vllm_url, max_size=None)
         created = json.loads(await self._ws.recv())
         if created.get("type") != "session.created":
             raise RuntimeError(f"unexpected handshake: {created}")
-        await self._ws.send(
-            json.dumps({"type": "session.update", "model": self.model})
-        )
+        await self._ws.send(json.dumps({"type": "session.update", "model": self.model}))
         await self._ws.send(json.dumps({"type": "input_audio_buffer.commit"}))
         self._reader = asyncio.create_task(self._recv_loop())
         self._started = time.time()
@@ -169,7 +140,9 @@ class OnlineVLLMSession:
                             "turn_id": int(data.get("turn_id") or 35),
                             "probs": data.get("probs"),
                             "frame_index": data.get("frame_index"),
-                            "text": text if (self._speech_opened or not self.suppress_idle_text) else "",
+                            "text": text
+                            if (self._speech_opened or not self.suppress_idle_text)
+                            else "",
                         }
                     )
                     self._pending_text = ""
@@ -216,9 +189,6 @@ class OnlineVLLMSession:
         if pcm.size == 0:
             return None
         self._mic_samples += int(pcm.size)
-
-        if self.bot_speaking:
-            self._gate_open = True
 
         if not self._gate_open:
             self._preroll.append(pcm.copy())
@@ -320,15 +290,6 @@ class OnlineVLLMSession:
             turn_label_delay_frames=self.turn_delay,
         )
         turns = [f.turn for f in pred.frames]
-        decision: DemoDecision = run_policy_on_frames(
-            turns=turns,
-            turn_probs=[f.turn_prob for f in pred.frames],
-            asr_tokens=[f.asr for f in pred.frames],
-            seconds_per_token=pred.seconds_per_token,
-            bot_speaking=self.bot_speaking,
-            cfg=self.cfg,
-            asr_text=pred.asr_text,
-        )
         hist = {}
         for t in turns:
             hist[t] = hist.get(t, 0) + 1
@@ -337,22 +298,19 @@ class OnlineVLLMSession:
         upd = StreamUpdate(
             kind=kind,
             asr_text=pred.asr_text,
-            action=decision.action,
-            last_turn=decision.last_turn,
-            reason=decision.reason,
-            barge_in_at_s=decision.barge_in_at_s,
+            last_turn=turns[-1] if turns else "idle",
             duration_s=pred.duration_s,
             n_frames=len(pred.frames),
             turn_hist=hist,
-            banner_html=decision_banner(decision),
             timeline_html=timeline_html(
                 turns,
                 seconds_per_token=pred.seconds_per_token,
-                barge_in_at_s=decision.barge_in_at_s,
             ),
-            events_html=events_table(decision.events, only_interesting=True),
+            frames_html=frame_table_html(pred.frames),
             turns=turns,
-            elapsed_infer_ms=round(max(infer_ms, wall_ms / max(len(pred.frames), 1)), 1),
+            elapsed_infer_ms=round(
+                max(infer_ms, wall_ms / max(len(pred.frames), 1)), 1
+            ),
         )
         self.last_update = upd
         self._last_pack_t = time.time()

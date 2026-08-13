@@ -73,8 +73,8 @@ python voxtral-realtime/integrations/transformers/examples/offline_inference.py 
   staging directory: Model Card, configuration, tokenizer metadata, release
   checks, and optionally the approved weights.
 - [`turn-demo/`](turn-demo/README.md) is the focused browser demo for testing
-  ASR, 80 ms turn frames, and ACCEPT/REJECT/HOLD/barge-in policy without an LLM
-  or TTS service.
+  raw ASR, 80 ms Turn states, and the frame-level token/class/probability table
+  without an LLM, TTS service, or product decision policy.
 - [`full-duplex-demo/`](full-duplex-demo/README.md) is the browser-based
   full-duplex dialogue demo that combines X2 Turn with optional LLM and TTS
   services.

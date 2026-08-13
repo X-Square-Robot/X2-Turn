@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Turn Demo Web UI (FastAPI) — 打断 / 拒识 / 接话 / Online Streaming。
+"""Turn Demo Web UI (FastAPI) — ASR + raw turn states.
 
 用法:
   # HF（本机加载 MTP）
@@ -24,13 +24,14 @@ import os
 import sys
 import tempfile
 import threading
-from typing import Any, Dict, List, Optional
+from pathlib import Path
+from typing import Any, Dict, List
 
 import numpy as np
 import soundfile as sf
 import uvicorn
-from fastapi import Body, FastAPI, File, Form, UploadFile, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import Body, FastAPI, File, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -45,20 +46,25 @@ from demo_turn.engine_vllm import (
 )
 from demo_turn.online import OnlineTurnSession
 from demo_turn.online_vllm import OnlineVLLMSession
-from demo_turn.policy import PolicyConfig, run_policy_on_frames
 from demo_turn.scenarios import build_scenarios
-from demo_turn.viz import decision_banner, events_table, timeline_html
+from demo_turn.viz import frame_table_html, timeline_html
 
 ARGS = None
 ENGINE = None  # TurnDemoEngine | TurnDemoVLLMEngine
 SCENARIOS = []
 INFER_LOCK = threading.Lock()
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+DEFAULT_LOGO_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "full-duplex-demo"
+    / "dialogue_system"
+    / "frontend"
+    / "x-square-logo.png"
+)
 
 
 class ScenarioReq(BaseModel):
     key: str
-    barge_in_frames: Optional[int] = 4
 
 
 def get_engine():
@@ -83,38 +89,33 @@ def get_engine():
     return ENGINE
 
 
-def run_one(wav_path: str, bot_speaking: bool, barge_in_frames: int) -> Dict[str, Any]:
+def run_one(wav_path: str) -> Dict[str, Any]:
     eng = get_engine()
     # Serialize with online HF decode — one MTP generate at a time.
     with INFER_LOCK:
         pred = eng.infer_file(wav_path)
-    decision = run_policy_on_frames(
-        turns=[f.turn for f in pred.frames],
-        turn_probs=[f.turn_prob for f in pred.frames],
-        asr_tokens=[f.asr for f in pred.frames],
-        seconds_per_token=pred.seconds_per_token,
-        bot_speaking=bot_speaking,
-        cfg=PolicyConfig(barge_in_frames=int(barge_in_frames)),
-        asr_text=pred.asr_text,
-    )
+    turns = [f.turn for f in pred.frames]
     return {
-        "action": decision.action,
-        "last_turn": decision.last_turn,
-        "reason": decision.reason,
-        "barge_in_at_s": decision.barge_in_at_s,
-        "asr_text": decision.asr_text,
+        "asr_text": pred.asr_text,
+        "last_turn": turns[-1] if turns else "idle",
         "duration_s": pred.duration_s,
         "n_frames": len(pred.frames),
-        "banner_html": decision_banner(decision),
         "timeline_html": timeline_html(
-            [f.turn for f in pred.frames],
+            turns,
             seconds_per_token=pred.seconds_per_token,
-            barge_in_at_s=decision.barge_in_at_s,
         ),
-        "events_html": events_table(decision.events, only_interesting=True),
+        "frames_html": frame_table_html(pred.frames),
+        "turns": turns,
         "turn_hist": {
             k: sum(1 for f in pred.frames if f.turn == k)
-            for k in ("idle", "noidle", "speaking", "turn_end", "backchannel", "uncertain")
+            for k in (
+                "idle",
+                "noidle",
+                "speaking",
+                "turn_end",
+                "backchannel",
+                "uncertain",
+            )
             if any(f.turn == k for f in pred.frames)
         },
     }
@@ -133,8 +134,11 @@ INDEX_HTML = """<!DOCTYPE html>
          background: linear-gradient(160deg,#eef2ff 0%,#f8fafc 40%,#ecfeff 100%);
          color: var(--ink); min-height:100vh; }
   .wrap { max-width: 980px; margin: 0 auto; padding: 28px 18px 60px; }
+  .brand { display:flex;align-items:center;gap:14px;margin-bottom:22px; }
+  .brand img { width:88px;height:88px;object-fit:contain;border-radius:16px; }
+  .brand-copy { min-width:0; }
   h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: -0.02em; }
-  .sub { color: var(--muted); margin-bottom: 22px; line-height: 1.5; }
+  .sub { color: var(--muted); line-height: 1.5; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px;
           padding: 16px 18px; margin-bottom: 14px; box-shadow: 0 8px 24px rgba(15,23,42,.04); }
   label { display:block; font-size:13px; color:var(--muted); margin-bottom:6px; }
@@ -155,18 +159,24 @@ INDEX_HTML = """<!DOCTYPE html>
 </head>
 <body>
 <div class="wrap">
-  <h1>X2 Turn Demo</h1>
-  <div class="sub">体验 <b>打断</b>（Bot 播 TTS 时抢话）与 <b>拒识/接话</b>（backchannel vs turn_end vs 半句）。
-  基于 6 类: idle / noidle / speaking / turn_end / backchannel / uncertain。
-  后端: <b id="backend_tag">__BACKEND__</b></div>
+  <div class="brand">
+    <img src="/assets/x-square-logo.png" alt="X Square mascot"/>
+    <div class="brand-copy">
+      <h1>X2 Turn Demo</h1>
+      <div class="sub">实时查看 ASR 文本和每 80ms 一帧的原始 Turn 模型输出。
+      六类状态: idle / noidle / speaking / turn_end / backchannel / uncertain。
+      后端: <b id="backend_tag">__BACKEND__</b></div>
+    </div>
+  </div>
 
   <div class="card">
     <table class="guide">
-      <tr><th>决策</th><th>含义</th><th>主要依据</th></tr>
-      <tr><td><b>ACCEPT</b></td><td>可以回复</td><td>末态 turn_end</td></tr>
-      <tr><td><b>REJECT</b></td><td>拒识（不当一轮）</td><td>末态 backchannel</td></tr>
-      <tr><td><b>HOLD</b></td><td>继续听</td><td>speaking / uncertain / noidle</td></tr>
-      <tr><td><b>barge-in</b></td><td>停掉 Bot TTS</td><td>TTS 中连续 noidle/speaking</td></tr>
+      <tr><th>Turn 状态</th><th>模型输出含义</th></tr>
+      <tr><td><b>idle / noidle</b></td><td>静音或检测到非静音活动</td></tr>
+      <tr><td><b>speaking</b></td><td>用户仍在说话</td></tr>
+      <tr><td><b>turn_end</b></td><td>模型预测当前话轮结束</td></tr>
+      <tr><td><b>backchannel</b></td><td>简短附和或反馈</td></tr>
+      <tr><td><b>uncertain</b></td><td>模型尚不能确定</td></tr>
     </table>
   </div>
 
@@ -175,10 +185,6 @@ INDEX_HTML = """<!DOCTYPE html>
       <div>
         <label>预设剧本</label>
         <select id="scenario"></select>
-      </div>
-      <div>
-        <label>打断阈值（连续 speech 帧 ×80ms）</label>
-        <input id="barge_frames" type="number" min="1" max="10" value="4"/>
       </div>
       <div>
         <button id="btn_scene" onclick="runScenario()">运行剧本</button>
@@ -193,10 +199,6 @@ INDEX_HTML = """<!DOCTYPE html>
         <label>或上传自己的 wav</label>
         <input id="file" type="file" accept="audio/*,.wav"/>
       </div>
-      <div class="chk">
-        <input id="bot_speaking" type="checkbox"/>
-        <label for="bot_speaking" style="margin:0">模拟 Bot 正在播 TTS（测打断）</label>
-      </div>
       <div>
         <button class="secondary" id="btn_upload" onclick="runUpload()">分析上传</button>
       </div>
@@ -206,8 +208,8 @@ INDEX_HTML = """<!DOCTYPE html>
   <div class="card">
     <div style="font-weight:600;margin-bottom:8px;">麦克风 · Online Streaming</div>
     <div class="tip" style="margin:0 0 12px;">
-      WebSocket 边说边推：每 ~320ms 增量解码 ASR + 6 类 turn + 决策灯。
-      测打断请勾选上面「模拟 Bot TTS」。需 Chrome + localhost/https。
+      WebSocket 边说边推：每 ~320ms 增量更新 ASR 和六类 Turn 状态。
+      需 Chrome + localhost/https。
     </div>
     <div class="row">
       <div>
@@ -261,25 +263,31 @@ async function init() {
   sel.onchange = () => {
     const s = SCENARIOS.find(x => x.key === sel.value);
     document.getElementById('scene_tip').textContent =
-      s ? `期望 ${s.expect} · ${s.tip} · 文本: ${s.text}` : '';
+      s ? `${s.tip} · 文本: ${s.text}` : '';
   };
   sel.onchange();
 }
 
 function render(j, extraHtml='') {
   document.getElementById('result').innerHTML = `
-    <div class="card">${extraHtml}${j.banner_html || ''}</div>
+    <div class="card">${extraHtml}<b>ASR:</b> ${escapeHtml(j.asr_text || '(empty)')}
+      <div class="tip">latest turn: <b>${escapeHtml(j.last_turn || 'idle')}</b></div></div>
     <div class="card"><div style="font-size:13px;color:#64748b;margin-bottom:6px;">
       duration=${j.duration_s?.toFixed?.(2)}s · frames=${j.n_frames} · hist=${JSON.stringify(j.turn_hist||{})}
     </div>${j.timeline_html||''}</div>
-    <div class="card">${j.events_html||''}</div>
+    <div class="card"><div style="font-weight:600;margin-bottom:8px;">帧级文字分析</div>
+      ${j.frames_html||''}</div>
   `;
+}
+
+function escapeHtml(value) {
+  const div = document.createElement('div');
+  div.textContent = String(value);
+  return div.innerHTML;
 }
 
 async function runScenario() {
   const key = document.getElementById('scenario').value;
-  const bargeRaw = document.getElementById('barge_frames').value;
-  const barge = Number.parseInt(bargeRaw, 10);
   const btn = document.getElementById('btn_scene');
   if (!key) {
     document.getElementById('status').textContent = '请先选择剧本';
@@ -291,10 +299,7 @@ async function runScenario() {
     const r = await fetch('/api/run_scenario', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        key,
-        barge_in_frames: Number.isFinite(barge) && barge > 0 ? barge : 4,
-      })
+      body: JSON.stringify({key})
     });
     const j = await r.json();
     if (!r.ok) {
@@ -303,7 +308,7 @@ async function runScenario() {
     }
     if (j.error) throw new Error(j.error);
     const tip = `<div style="margin-bottom:10px;color:#475569;font-size:13px;">
-      <b>${j.scenario?.title||''}</b> · 期望 <code>${j.scenario?.expect||''}</code><br>${j.scenario?.tip||''}</div>`;
+      <b>${j.scenario?.title||''}</b><br>${j.scenario?.tip||''}</div>`;
     render(j, tip);
     document.getElementById('status').textContent = '完成';
   } catch (e) {
@@ -314,12 +319,8 @@ async function runScenario() {
 }
 
 async function postAudioBlob(blob, filename) {
-  const barge = document.getElementById('barge_frames').value;
-  const bot = document.getElementById('bot_speaking').checked;
   const fd = new FormData();
   fd.append('file', blob, filename);
-  fd.append('bot_speaking', bot ? '1' : '0');
-  fd.append('barge_in_frames', barge);
   document.getElementById('status').textContent = '推理中…（说完后分析整段，约几秒）';
   const r = await fetch('/api/run_upload', { method:'POST', body: fd });
   let j = {};
@@ -493,8 +494,7 @@ function applyStreamUpdate(j) {
   document.getElementById('live_asr').textContent =
     (j.kind === 'final' ? '[FINAL] ' : '[LIVE] ') + (j.asr_text || '(…)');
   render(j, `<div class="tip">online ${j.kind} · infer ${j.elapsed_infer_ms}ms · frames=${j.n_frames}</div>`);
-  document.getElementById('status').textContent =
-    `${j.kind}: ${j.action} · ${j.reason}`;
+  document.getElementById('status').textContent = `${j.kind}: turn=${j.last_turn}`;
 }
 
 async function startLive() {
@@ -502,8 +502,6 @@ async function startLive() {
     alert('浏览器不支持麦克风');
     return;
   }
-  const bot = document.getElementById('bot_speaking').checked;
-  const barge = Number(document.getElementById('barge_frames').value || 4);
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   const ws = new WebSocket(`${proto}://${location.host}/ws/stream`);
   ws.binaryType = 'arraybuffer';
@@ -515,8 +513,6 @@ async function startLive() {
 
   ws.send(JSON.stringify({
     type: 'start',
-    bot_speaking: bot,
-    barge_in_frames: barge,
     commit_ms: 320,
   }));
 
@@ -666,6 +662,13 @@ def create_app() -> FastAPI:
             "model_loaded": ENGINE is not None,
         }
 
+    @app.get("/assets/x-square-logo.png", response_class=FileResponse)
+    def brand_logo():
+        logo_path = Path(os.environ.get("X2_LOGO_PATH", DEFAULT_LOGO_PATH))
+        if not logo_path.is_file():
+            return JSONResponse({"error": "brand logo not found"}, status_code=404)
+        return FileResponse(logo_path, media_type="image/png")
+
     @app.get("/", response_class=HTMLResponse)
     def index():
         tag = "vLLM /v1/realtime" if ARGS.backend == "vllm" else "HF (local GPU)"
@@ -681,8 +684,6 @@ def create_app() -> FastAPI:
                     "key": s.key,
                     "title": s.title,
                     "category": s.category,
-                    "mode": s.mode,
-                    "expect": s.expect,
                     "text": s.text,
                     "tip": s.tip,
                 }
@@ -693,23 +694,16 @@ def create_app() -> FastAPI:
     @app.post("/api/run_scenario")
     async def api_run_scenario(payload: ScenarioReq = Body(...)):
         key = (payload.key or "").strip()
-        barge = int(payload.barge_in_frames or 4)
         if not key:
             return JSONResponse({"error": "missing scenario key"}, status_code=400)
         sc = next((s for s in SCENARIOS if s.key == key), None)
         if sc is None:
             return JSONResponse({"error": f"unknown scenario {key}"}, status_code=404)
         try:
-            out = await asyncio.to_thread(
-                run_one,
-                sc.wav,
-                sc.mode == "barge_in",
-                barge,
-            )
+            out = await asyncio.to_thread(run_one, sc.wav)
             out["scenario"] = {
                 "key": sc.key,
                 "title": sc.title,
-                "expect": sc.expect,
                 "tip": sc.tip,
                 "text": sc.text,
             }
@@ -720,8 +714,6 @@ def create_app() -> FastAPI:
     @app.post("/api/run_upload")
     async def api_run_upload(
         file: UploadFile = File(...),
-        bot_speaking: str = Form("0"),
-        barge_in_frames: str = Form("4"),
     ):
         # Must not call blocking GPU / asyncio.run on the event loop thread
         # (breaks vLLM offline + freezes WebSockets). Offload to a worker.
@@ -744,7 +736,9 @@ def create_app() -> FastAPI:
                 data, sr = sf.read(path, always_2d=False)
                 if getattr(data, "ndim", 1) > 1:
                     data = np.mean(data, axis=-1)
-                fd2, wav_path = tempfile.mkstemp(suffix=".wav", prefix="demo_turn_norm_")
+                fd2, wav_path = tempfile.mkstemp(
+                    suffix=".wav", prefix="demo_turn_norm_"
+                )
                 os.close(fd2)
                 tmp_paths.append(wav_path)
                 sf.write(wav_path, np.asarray(data, dtype=np.float32), int(sr))
@@ -752,12 +746,7 @@ def create_app() -> FastAPI:
             except Exception:
                 pass
             try:
-                return await asyncio.to_thread(
-                    run_one,
-                    path,
-                    bot_speaking in ("1", "true", "True", "yes"),
-                    int(barge_in_frames or 4),
-                )
+                return await asyncio.to_thread(run_one, path)
             except Exception as e:
                 return JSONResponse({"error": str(e)}, status_code=500)
         finally:
@@ -780,16 +769,12 @@ def create_app() -> FastAPI:
                     data = json.loads(msg["text"])
                     typ = data.get("type")
                     if typ == "start":
-                        bot = bool(data.get("bot_speaking"))
-                        barge = int(data.get("barge_in_frames") or 4)
                         commit_ms = int(data.get("commit_ms") or 320)
                         if ARGS.backend == "vllm":
                             eng = get_engine()
                             session = OnlineVLLMSession(
                                 vllm_url=ARGS.vllm_url,
                                 model=eng.model,
-                                bot_speaking=bot,
-                                barge_in_frames=barge,
                                 commit_ms=commit_ms,
                                 delay_ms=eng.delay_ms,
                                 turn_label_delay_frames=eng.turn_delay,
@@ -798,8 +783,6 @@ def create_app() -> FastAPI:
                         else:
                             session = OnlineTurnSession(
                                 get_engine(),
-                                bot_speaking=bot,
-                                barge_in_frames=barge,
                                 commit_ms=commit_ms,
                                 lock=INFER_LOCK,
                             )
@@ -826,7 +809,7 @@ def create_app() -> FastAPI:
                     raw = msg["bytes"]
                     # int16 LE PCM @ 16kHz mono
                     i16 = np.frombuffer(raw, dtype=np.int16)
-                    pcm = (i16.astype(np.float32) / 32768.0)
+                    pcm = i16.astype(np.float32) / 32768.0
                     if isinstance(session, OnlineVLLMSession):
                         upd = await session.push_pcm(pcm)
                     else:

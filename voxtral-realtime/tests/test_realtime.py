@@ -38,6 +38,20 @@ def test_bot_speaking_uses_fast_commit_and_opens_gate():
     session.set_bot_speaking(True)
     assert session.commit_ms == 80
     assert session._gate_open
+    session._last_poll = 123.0
+    session._speech_run = 42
+
+    session.set_bot_speaking(True)
+
+    assert session._last_poll == 123.0
+    assert session._speech_run == 42
+
+
+def test_session_created_during_tts_starts_with_open_gate():
+    session = make_session(bot_speaking=True)
+
+    assert session._gate_open
+    assert session.commit_ms == 80
 
 
 @pytest.mark.asyncio

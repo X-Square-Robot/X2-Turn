@@ -16,8 +16,6 @@ class Scenario:
     key: str
     title: str
     category: str
-    mode: str          # listen | barge_in
-    expect: str        # ACCEPT / REJECT / HOLD / BARGE_THEN_*
     wav: str
     text: str
     tip: str
@@ -118,16 +116,13 @@ def build_scenarios(
         return xs[i] if i < len(xs) else None
 
     specs = [
-        ("complete", "listen", "ACCEPT", "完整一句 → 期望 turn_end → 绿灯接话"),
-        ("wait", "listen", "ACCEPT", "结束指令/wait → 期望 turn_end → 接话停播"),
-        ("backchannel", "listen", "REJECT", "嗯/哦对 → 期望 backchannel → 拒识不回复"),
-        ("incomplete", "listen", "HOLD", "半句话 → 期望 speaking/uncertain → 继续听"),
-        ("complete", "barge_in", "BARGE_THEN_ACCEPT", "Bot 播报中用户插完整句 → 先打断再接话"),
-        ("backchannel", "barge_in", "BARGE_OR_IGNORE", "Bot 播报中用户只嗯一声 → 尽量不打断或打断后拒识"),
-        ("incomplete", "barge_in", "BARGE_THEN_HOLD", "Bot 播报中用户半句插入 → 打断后继续听"),
+        ("complete", "完整句的逐帧 Turn 状态"),
+        ("wait", "结束指令的逐帧 Turn 状态"),
+        ("backchannel", "简短附和的逐帧 Turn 状态"),
+        ("incomplete", "未完成语句的逐帧 Turn 状态"),
     ]
     used = {c: 0 for c in ("complete", "wait", "backchannel", "incomplete")}
-    for cat, mode, expect, tip in specs:
+    for cat, tip in specs:
         i = used[cat]
         item = pick(cat, i)
         used[cat] = i + 1
@@ -140,18 +135,13 @@ def build_scenarios(
                     break
         if item is None:
             continue
-        key = f"{mode}_{cat}_{i}"
-        title = {
-            "listen": f"[听] {cat}",
-            "barge_in": f"[打断] {cat}",
-        }[mode] + f": {item['text'][:24]}"
+        key = f"{cat}_{i}"
+        title = f"[{cat}] {item['text'][:24]}"
         out.append(
             Scenario(
                 key=key,
                 title=title,
                 category=cat,
-                mode=mode,
-                expect=expect,
                 wav=item["wav"],
                 text=item["text"],
                 tip=tip,

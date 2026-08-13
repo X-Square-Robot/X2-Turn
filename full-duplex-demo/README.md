@@ -115,6 +115,21 @@ services, set `TURN_API_URL`, `LLM_API_URL`, and `TTS_API_URL`, then run:
 bash scripts/run_app.sh
 ```
 
+The launcher enables an audio-free structured turn trace at
+`logs/turn_trace.jsonl`. It records one JSON object per model frame, including
+the six-class probabilities, incremental ASR, acoustic activity, production
+controller output, and whether the Dialogue App would stop TTS. Override or
+disable it with:
+
+```bash
+VOXTRAL_TRACE_JSONL=/another/private/path/turn_trace.jsonl bash start_demo.sh
+VOXTRAL_TRACE_JSONL= bash start_demo.sh  # disable
+```
+
+The trace stores transcripts and decision metadata but never PCM/audio. Keep it
+private and upload it to Turn Demo only when comparing the simplified and
+production policies.
+
 Set `TTS_BACKEND=edge` to use the lightweight Edge TTS fallback without
 `COSY_ROOT`.
 

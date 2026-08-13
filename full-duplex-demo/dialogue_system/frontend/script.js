@@ -142,6 +142,7 @@ const conversationLogEl = document.getElementById("conversationLog");
 const clearConversationBtn = document.getElementById("clearConversationBtn");
 const conversationTurns = new Map();
 let conversationSequence = 0;
+let conversationDraft = null;
 
 // Loading Overlay Elements
 const loadingOverlay = document.getElementById("loadingOverlay");
@@ -210,27 +211,51 @@ function ensureConversationTurn({ epoch, turn_id: turnId }) {
     return conversationTurns.get(numericEpoch);
   }
 
+  if (conversationDraft) {
+    const entry = conversationDraft;
+    conversationDraft = null;
+    entry.turn.classList.remove('live');
+    entry.turn.dataset.epoch = String(numericEpoch);
+    entry.turnLabel.textContent = `Turn ${entry.sequence}`;
+    entry.turnLabel.title = turnId || `epoch ${numericEpoch}`;
+    entry.assistantText.textContent = 'Waiting for response…';
+    conversationTurns.set(numericEpoch, entry);
+    return entry;
+  }
+
+  const entry = createConversationTurn({ numericEpoch, turnId, live: false });
+  conversationTurns.set(numericEpoch, entry);
+  return entry;
+}
+
+function createConversationTurn({ numericEpoch = null, turnId = '', live = false }) {
   const empty = conversationLogEl.querySelector('.conversation-empty');
   if (empty) empty.remove();
 
   conversationSequence += 1;
   const turn = document.createElement('section');
-  turn.className = 'conversation-turn';
-  turn.dataset.epoch = String(numericEpoch);
+  turn.className = live ? 'conversation-turn live' : 'conversation-turn';
+  if (numericEpoch !== null) turn.dataset.epoch = String(numericEpoch);
 
   const header = document.createElement('div');
   header.className = 'conversation-turn-header';
 
   const turnLabel = document.createElement('span');
-  turnLabel.textContent = `Turn ${conversationSequence}`;
-  turnLabel.title = turnId || `epoch ${numericEpoch}`;
+  turnLabel.textContent = live
+    ? `Turn ${conversationSequence} · LIVE`
+    : `Turn ${conversationSequence}`;
+  turnLabel.title = live ? 'Live ASR preview' : (turnId || `epoch ${numericEpoch}`);
 
   const time = document.createElement('span');
   time.textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
   header.append(turnLabel, time);
 
   const userRow = createConversationMessage('USER', 'user', '');
-  const assistantRow = createConversationMessage('LLM', 'assistant', 'Waiting for response…');
+  const assistantRow = createConversationMessage(
+    'LLM',
+    'assistant',
+    live ? 'Listening…' : 'Waiting for response…',
+  );
   assistantRow.text.classList.add('pending');
 
   turn.append(header, userRow.row, assistantRow.row);
@@ -238,12 +263,21 @@ function ensureConversationTurn({ epoch, turn_id: turnId }) {
 
   const entry = {
     turn,
+    turnLabel,
+    sequence: conversationSequence,
     userText: userRow.text,
     assistantText: assistantRow.text,
   };
-  conversationTurns.set(numericEpoch, entry);
   scrollConversationToLatest();
   return entry;
+}
+
+function ensureConversationDraft() {
+  if (!conversationLogEl) return null;
+  if (!conversationDraft) {
+    conversationDraft = createConversationTurn({ live: true });
+  }
+  return conversationDraft;
 }
 
 function createConversationMessage(label, roleClass, initialText) {
@@ -263,8 +297,11 @@ function createConversationMessage(label, roleClass, initialText) {
 }
 
 function recordConversationAsr(payload) {
-  const entry = ensureConversationTurn(payload);
-  if (!entry) return; // Ignore interim VAD transcriptions without an epoch.
+  const numericEpoch = Number(payload.epoch);
+  const entry = Number.isFinite(numericEpoch) && numericEpoch > 0
+    ? ensureConversationTurn(payload)
+    : ensureConversationDraft();
+  if (!entry) return;
   entry.userText.textContent = payload.text || '';
   scrollConversationToLatest();
 }
@@ -290,6 +327,7 @@ function scrollConversationToLatest() {
 if (clearConversationBtn) {
   clearConversationBtn.addEventListener('click', () => {
     conversationTurns.clear();
+    conversationDraft = null;
     conversationSequence = 0;
     conversationLogEl.replaceChildren();
     const empty = document.createElement('div');
@@ -437,7 +475,7 @@ startBtn.addEventListener('click', async () => {
     source = audioContext.createMediaStreamSource(stream);
     analyser = audioContext.createAnalyser();
     analyser.fftSize = 512;
-    dataArray = new Uint8Array(analyser.frequencyBinCount);
+    dataArray = new Uint8Array(analyser.fftSize);
 
     // Create ScriptProcessor to send in frames
     processor = audioContext.createScriptProcessor(512, 1, 1);
@@ -448,6 +486,7 @@ startBtn.addEventListener('click', async () => {
     processor.onaudioprocess = e => {
       if (!listening) return;
       const input = e.inputBuffer.getChannelData(0);
+      vizCaptureUserPcm(input);
       // Float32 -> Int16
       const int16 = new Int16Array(input.length);
       for (let i = 0; i < input.length; i++) {
@@ -558,7 +597,8 @@ const TURN_COLORS = {
 };
 
 const viz = {
-  user: new Float32Array(VIZ_N),
+  userMin: new Float32Array(VIZ_N),
+  userMax: new Float32Array(VIZ_N),
   ai: new Uint8Array(VIZ_N),
   turn: new Array(VIZ_N).fill('idle'),
   head: 0,
@@ -566,6 +606,9 @@ const viz = {
   currentTurn: 'idle',
   lastAiWrite: 0,
   lastAiRead: -1,
+  pendingUserMin: 0,
+  pendingUserMax: 0,
+  pendingUserSamples: false,
   timer: null,
 };
 
@@ -600,15 +643,39 @@ function vizOnTurn(payload) {
   }
 }
 
-function vizUserLevel() {
-  if (!listening || !analyser || !dataArray) return 0;
-  analyser.getByteTimeDomainData(dataArray);
-  let sum = 0;
-  for (let i = 0; i < dataArray.length; i++) {
-    const v = (dataArray[i] - 128) / 128;
-    sum += v * v;
+function vizCaptureUserPcm(input) {
+  if (!listening || !input || input.length === 0) return;
+  let chunkMin = 1;
+  let chunkMax = -1;
+  for (let i = 0; i < input.length; i++) {
+    const v = input[i];
+    if (v < chunkMin) chunkMin = v;
+    if (v > chunkMax) chunkMax = v;
   }
-  return Math.min(1, Math.sqrt(sum / dataArray.length) * 4);
+  if (!viz.pendingUserSamples) {
+    viz.pendingUserMin = chunkMin;
+    viz.pendingUserMax = chunkMax;
+    viz.pendingUserSamples = true;
+  } else {
+    viz.pendingUserMin = Math.min(viz.pendingUserMin, chunkMin);
+    viz.pendingUserMax = Math.max(viz.pendingUserMax, chunkMax);
+  }
+}
+
+function vizTakeUserRange() {
+  if (!listening) {
+    viz.pendingUserMin = 0;
+    viz.pendingUserMax = 0;
+    viz.pendingUserSamples = false;
+    return [0, 0];
+  }
+  const range = viz.pendingUserSamples
+    ? [viz.pendingUserMin, viz.pendingUserMax]
+    : [0, 0];
+  viz.pendingUserMin = 0;
+  viz.pendingUserMax = 0;
+  viz.pendingUserSamples = false;
+  return range;
 }
 
 function vizAiPlaying() {
@@ -623,7 +690,9 @@ function vizAiPlaying() {
 
 function vizTick() {
   const slot = viz.head % VIZ_N;
-  viz.user[slot] = vizUserLevel();
+  const [userMin, userMax] = vizTakeUserRange();
+  viz.userMin[slot] = userMin;
+  viz.userMax[slot] = userMax;
   viz.ai[slot] = vizAiPlaying();
   viz.turn[slot] = viz.currentTurn;
   viz.head++;
@@ -644,6 +713,7 @@ function vizDraw() {
 
   tlCtx.fillStyle = '#e2e8f0';
   for (let i = 1; i < 3; i++) tlCtx.fillRect(0, i * laneH, W, 1);
+  tlCtx.fillRect(0, laneH * 0.5, W, 1);
   tlCtx.fillStyle = '#64748b';
   tlCtx.font = '10px ui-sans-serif, system-ui';
   tlCtx.fillText('USER', 4, laneH * 0 + 12);
@@ -657,11 +727,15 @@ function vizDraw() {
     const slot = ((abs % VIZ_N) + VIZ_N) % VIZ_N;
     const x = W - (n - i) * px;
 
-    const u = viz.user[slot];
-    if (u > 0.02) {
-      const h = Math.max(1, u * (laneH - 8));
+    const userMin = viz.userMin[slot];
+    const userMax = viz.userMax[slot];
+    if (userMax - userMin > 0.01) {
+      const center = laneH * 0.5;
+      const halfHeight = (laneH - 8) * 0.5;
+      const top = center - Math.min(1, Math.max(0, userMax * 4)) * halfHeight;
+      const bottom = center - Math.max(-1, Math.min(0, userMin * 4)) * halfHeight;
       tlCtx.fillStyle = '#38bdf8';
-      tlCtx.fillRect(x, laneH * 0.5 - h / 2, Math.max(px, 1), h);
+      tlCtx.fillRect(x, top, Math.max(px, 1), Math.max(1, bottom - top));
     }
 
     if (viz.ai[slot]) {

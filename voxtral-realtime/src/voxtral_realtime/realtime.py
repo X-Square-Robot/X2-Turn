@@ -53,7 +53,7 @@ class RealtimeVLLMSession:
         self._consumed_frames = 0
         self._pending_text = ""
         self._speech_opened = False
-        self._gate_open = not self.lead_in_gate
+        self._gate_open = self.bot_speaking or not self.lead_in_gate
         self._preroll: list[np.ndarray] = []
         self._preroll_n = self._speech_run = self._sent_samples = 0
         self._last_poll = 0.0
@@ -72,7 +72,10 @@ class RealtimeVLLMSession:
         self._reader = asyncio.create_task(self._recv_loop())
 
     def set_bot_speaking(self, speaking: bool) -> None:
-        self.bot_speaking = bool(speaking)
+        speaking = bool(speaking)
+        if speaking == self.bot_speaking:
+            return
+        self.bot_speaking = speaking
         self.commit_ms = (
             self.barge_commit_ms if self.bot_speaking else self.normal_commit_ms
         )
