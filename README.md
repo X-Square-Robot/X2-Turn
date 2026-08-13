@@ -12,10 +12,6 @@
     <strong>Frame-synchronous streaming ASR and Turn-state prediction</strong>
   </p>
   <p>
-    One Voxtral-based model, two synchronized outputs, and one Turn prediction
-    every 80 ms.
-  </p>
-  <p>
     <a href="https://huggingface.co/Kaiqfu/X2-Turn-4B-0812"><img src="https://img.shields.io/badge/Hugging%20Face-X2--Turn--4B--0812-yellow" alt="Hugging Face model"></a>
     <img src="https://img.shields.io/badge/Python-3.10%2B-blue" alt="Python 3.10+">
     <img src="https://img.shields.io/badge/License-Apache%202.0-green" alt="Apache-2.0">
@@ -24,12 +20,29 @@
 
 [English](README.md) | [Chinese](README_zh.md)
 
+## Overview
+
 X2 Turn extends Voxtral Realtime with two synchronized outputs: streaming
 automatic speech recognition and one turn-taking prediction every 80 ms.
 
 The turn head predicts `idle`, `noidle`, `speaking`, `turn_end`,
 `backchannel`, or `uncertain`. Applications should smooth these frame-level
 predictions instead of treating a single frame as an irreversible action.
+
+## Demos
+
+This repository includes two complementary browser demos:
+
+- **[Turn Demo](turn-demo/README.md)** visualizes streaming ASR, the raw
+  six-class Turn timeline, per-frame probabilities, and aligned ASR tokens. It
+  runs without an LLM or TTS service and is the fastest way to inspect model
+  behavior.
+- **[Full-Duplex Dialogue Demo](full-duplex-demo/README.md)** combines X2 Turn
+  with optional LLM and TTS services to demonstrate low-latency response timing,
+  backchannels, and user interruption during speech playback.
+
+Start with the Turn Demo when evaluating the model itself. Use the Full-Duplex
+Dialogue Demo when validating a complete conversational stack.
 
 ## Quick start: one audio file
 
@@ -125,3 +138,24 @@ completing
 [`MODEL_RELEASE_CHECKLIST.md`](voxtral-mtp-turn/MODEL_RELEASE_CHECKLIST.md).
 Never publish local logs, certificates, datasets, external checkouts, or
 credentials.
+
+## Acknowledgments
+
+X2 Turn builds on ideas, models, and infrastructure from the open-source speech
+and machine-learning community. We thank:
+
+- [Mistral AI](https://mistral.ai/) for
+  [Voxtral Mini 4B Realtime](https://huggingface.co/mistralai/Voxtral-Mini-4B-Realtime-2602),
+  which provides the realtime speech backbone.
+- [SoulX-Duplug](https://github.com/Soul-AILab/SoulX-Duplug) for its semantic
+  turn-taking work and the dialogue-system foundation adapted by the
+  full-duplex demo.
+- [vLLM](https://github.com/vllm-project/vllm) for the high-throughput serving
+  runtime extended by the X2 Turn realtime overlay.
+- [Hugging Face Transformers](https://github.com/huggingface/transformers) for
+  model loading, processing, and the local inference ecosystem.
+- [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) for the optional
+  streaming TTS integration used by the full-duplex demo.
+
+See the component `NOTICE` files and the available `THIRD_PARTY_NOTICES.md`
+documents for detailed attribution and license information.

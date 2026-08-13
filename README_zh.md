@@ -23,12 +23,26 @@
 
 [English](README.md) | [中文](README_zh.md)
 
+## 项目简介
+
 X2 Turn 在 Voxtral Realtime 基础上提供两个同步输出：流式自动语音识别，
 以及每 80 毫秒一次的话轮状态预测。
 
 话轮预测头输出 `idle`、`noidle`、`speaking`、`turn_end`、
 `backchannel` 或 `uncertain`。应用侧应对帧级结果进行平滑处理，
 不要将单帧预测直接视为不可撤销的动作。
+
+## Demo
+
+仓库提供两个定位互补的浏览器 Demo：
+
+- **[Turn Demo](turn-demo/README.md)**：展示流式 ASR、原始六分类 Turn 时间轴、
+  每帧概率及对齐后的 ASR token。它不依赖 LLM 或 TTS，是观察模型行为最快的入口。
+- **[全双工对话 Demo](full-duplex-demo/README.md)**：将 X2 Turn 与可选的 LLM、
+  TTS 服务组合起来，展示低延迟接话、附和以及语音播放期间的用户打断。
+
+如果需要评估模型本身，请先使用 Turn Demo；如果需要验证完整对话系统，
+请使用全双工对话 Demo。
 
 ## 快速开始：推理一条音频
 
@@ -116,3 +130,22 @@ Torch 与 CUDA 依赖冲突。
 后，才能将权重发布到审核通过的 Model Hub。
 
 禁止发布本地日志、证书、数据集、外部源码目录或任何凭据。
+
+## 致谢
+
+X2 Turn 建立在开源语音与机器学习社区的模型、研究和基础设施之上。感谢：
+
+- [Mistral AI](https://mistral.ai/) 发布
+  [Voxtral Mini 4B Realtime](https://huggingface.co/mistralai/Voxtral-Mini-4B-Realtime-2602)，
+  为本项目提供实时语音基础模型。
+- [SoulX-Duplug](https://github.com/Soul-AILab/SoulX-Duplug) 的语义话轮研究，
+  以及全双工 Demo 所适配的对话系统基础。
+- [vLLM](https://github.com/vllm-project/vllm) 提供高吞吐推理框架，
+  X2 Turn 在此基础上实现实时 overlay。
+- [Hugging Face Transformers](https://github.com/huggingface/transformers)
+  提供模型加载、音频处理及本地推理生态。
+- [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) 提供全双工 Demo
+  使用的可选流式 TTS 集成。
+
+更详细的归属与许可证信息，请查看各组件中的 `NOTICE` 以及已有的
+`THIRD_PARTY_NOTICES.md` 文档。
