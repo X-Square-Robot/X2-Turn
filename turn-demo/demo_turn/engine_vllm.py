@@ -1,7 +1,7 @@
 """vLLM realtime backend: ASR + 6-class turn via ``/v1/realtime``.
 
 Requires the Voxtral-MTP fork (``vllm-voxtral-mtp``) serving a checkpoint
-that includes ``vad_lm_head`` (e.g. ``final_vllm``).
+that includes ``vad_lm_head`` (for example, ``X2-Turn-4B-0812-vllm``).
 """
 
 from __future__ import annotations

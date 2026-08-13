@@ -1,9 +1,11 @@
 # vLLM MTP examples
 
-After applying the overlay and exporting `final` to `final_vllm`, run:
+After applying the overlay and exporting the Hugging Face checkpoint for vLLM,
+run:
 
 ```bash
-MODEL=/path/to/final_vllm bash integrations/vllm/examples/voxtral_mtp/serve.sh
+MODEL=/path/to/X2-Turn-4B-0812-vllm \
+  bash integrations/vllm/examples/voxtral_mtp/serve.sh
 python integrations/vllm/examples/voxtral_mtp/test_stream_mtp.py --audio sample.wav
 ```
 

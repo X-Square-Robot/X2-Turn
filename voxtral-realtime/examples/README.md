@@ -18,7 +18,7 @@ service. It does not start the browser demo, LLM, or TTS.
 3. Start patched vLLM:
 
    ```bash
-   MODEL=/path/to/final_vllm \
+   MODEL=/path/to/X2-Turn-4B-0812-vllm \
      bash integrations/vllm/examples/voxtral_mtp/serve.sh
    ```
 

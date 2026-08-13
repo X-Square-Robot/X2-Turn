@@ -75,10 +75,10 @@ cp .env.example .env
 `VOXTRAL_MODEL`, `LLM_MODEL`, and `COSY_MODEL` accept either hub IDs or model
 directories. Review every model's license and access requirements separately.
 
-The model hub repository contains the canonical Hugging Face `final`
-checkpoint. The patched vLLM runtime requires a generated `final_vllm`
-directory. Follow `../voxtral-realtime/integrations/vllm/README.md` to apply the
-pinned vLLM overlay and export the weights, then set:
+The Model Hub repository contains the canonical Hugging Face checkpoint. The
+patched vLLM runtime requires a separately exported vLLM directory. Follow
+`../voxtral-realtime/integrations/vllm/README.md` to apply the pinned vLLM
+overlay and export the weights, then set:
 
 ```bash
 VOXTRAL_VLLM_MODEL=/path/to/X2-Turn-4B-0812-vllm
@@ -162,4 +162,6 @@ The included X Square logo and related brand assets are not granted under the
 Apache License. Their use requires owner approval except for reasonable
 attribution. See `docs/BRAND_ASSETS.md`.
 
-See `CONTRIBUTING.md` and `SECURITY.md` before reporting changes or issues.
+See the repository-level
+[`CONTRIBUTING.md`](../CONTRIBUTING.md) and
+[`SECURITY.md`](../SECURITY.md) before reporting changes or issues.

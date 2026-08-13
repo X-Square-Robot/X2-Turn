@@ -40,7 +40,8 @@ python integrations/vllm/tools/export_mtp_for_vllm.py \
 exported directory; vLLM uses `params.json` for the required audio
 configuration.
 
-Serve `final_vllm` while exposing the public model name expected by the bridge:
+Serve the exported directory while exposing the public model name expected by
+the bridge:
 
 ```bash
 MODEL=/path/to/X2-Turn-4B-0812-vllm \

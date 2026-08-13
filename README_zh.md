@@ -17,7 +17,7 @@
   <p>
     <a href="https://huggingface.co/Kaiqfu/X2-Turn-4B-0812"><img src="https://img.shields.io/badge/Hugging%20Face-X2--Turn--4B--0812-yellow" alt="Hugging Face 模型"></a>
     <img src="https://img.shields.io/badge/Python-3.10%2B-blue" alt="Python 3.10+">
-    <img src="https://img.shields.io/badge/License-Apache%202.0-green" alt="Apache-2.0">
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-green" alt="Apache-2.0"></a>
   </p>
 </div>
 
@@ -128,6 +128,11 @@ Torch 与 CUDA 依赖冲突。
 发布，不进入本源码仓库。
 
 禁止发布本地日志、证书、数据集、外部源码目录或任何凭据。
+
+## 贡献与安全
+
+欢迎参与贡献。提交大型改动前请先阅读 [`CONTRIBUTING.md`](CONTRIBUTING.md)，
+安全问题请按照 [`SECURITY.md`](SECURITY.md) 私下报告。
 
 ## 致谢
 

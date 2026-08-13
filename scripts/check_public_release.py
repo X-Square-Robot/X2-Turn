@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Reject private infrastructure and likely secrets before publication."""
 
 from __future__ import annotations
@@ -11,8 +10,11 @@ ROOT = Path(__file__).resolve().parents[1]
 SELF = Path(__file__).resolve()
 SKIP_DIRS = {
     ".git",
+    ".pytest_cache",
+    ".ruff_cache",
     ".venv",
     "__pycache__",
+    "build",
     "certs",
     "CosyVoice_official",
     "logs",
@@ -40,9 +42,16 @@ PATTERNS = [
     ("internal GitLab host", re.compile(r"\bgitlab\.zbl\.local\b")),
     ("legacy deployment address", re.compile(r"\b39\.101\.65\.229\b")),
     (
+        "private IPv4 address",
+        re.compile(
+            r"(?<![\w.])(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|"
+            r"192\.168\.\d{1,3}\.\d{1,3})(?![\w.])"
+        ),
+    ),
+    (
         "possible secret",
         re.compile(
-            r"""(?i)(api[_-]?key|access[_-]?token|secret)\s*=\s*['"][^'"]{8,}"""
+            r"""(?i)(api[_-]?key|access[_-]?token|secret|token)\s*=\s*['"][^'"]{8,}"""
         ),
     ),
     ("AWS access key", re.compile(r"AKIA[A-Z0-9]{16}")),
@@ -67,9 +76,11 @@ def main() -> int:
             for match in pattern.finditer(text):
                 line = text.count("\n", 0, match.start()) + 1
                 failures.append(f"{path.relative_to(ROOT)}:{line}: {label}")
+
     if failures:
         print("Public release check failed:\n" + "\n".join(failures), file=sys.stderr)
         return 1
+
     print("Public release check passed")
     return 0
 

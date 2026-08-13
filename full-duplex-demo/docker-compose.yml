@@ -16,7 +16,7 @@ services:
       - -m
       - vllm.entrypoints.cli.main
       - serve
-      - ${VOXTRAL_VLLM_MODEL:-/models/voxtral/final_vllm}
+      - ${VOXTRAL_VLLM_MODEL:-/models/X2-Turn-4B-0812-vllm}
       - --served-model-name
       - ${VOXTRAL_MODEL:-Kaiqfu/X2-Turn-4B-0812}
       - --host

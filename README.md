@@ -14,7 +14,7 @@
   <p>
     <a href="https://huggingface.co/Kaiqfu/X2-Turn-4B-0812"><img src="https://img.shields.io/badge/Hugging%20Face-X2--Turn--4B--0812-yellow" alt="Hugging Face model"></a>
     <img src="https://img.shields.io/badge/Python-3.10%2B-blue" alt="Python 3.10+">
-    <img src="https://img.shields.io/badge/License-Apache%202.0-green" alt="Apache-2.0">
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-green" alt="Apache-2.0"></a>
   </p>
 </div>
 
@@ -132,6 +132,12 @@ separately. Model weights and model metadata are distributed through the
 [Hugging Face model repository](https://huggingface.co/Kaiqfu/X2-Turn-4B-0812),
 not this source repository. Never publish local logs, certificates, datasets,
 external checkouts, or credentials.
+
+## Contributing and security
+
+Contributions are welcome. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before
+opening a large change, and report vulnerabilities according to
+[`SECURITY.md`](SECURITY.md).
 
 ## Acknowledgments
 

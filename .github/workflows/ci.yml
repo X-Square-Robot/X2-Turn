@@ -19,11 +19,12 @@ jobs:
           python -m pip install -e "./voxtral-realtime[dev,transformers]"
           python -m pip install -e "./turn-demo[dev]"
           python -m pip install -e "./full-duplex-demo[demo,dev]"
-      - name: Validate Miniforge environments
+      - name: Validate release metadata
         run: |
-          ruff check scripts/check_environments.py scripts/check_release_language.py
+          ruff check scripts/check_environments.py scripts/check_release_language.py scripts/check_public_release.py
           python scripts/check_environments.py
           python scripts/check_release_language.py
+          python scripts/check_public_release.py
       - name: Validate core
         working-directory: voxtral-realtime
         run: |
@@ -31,17 +32,14 @@ jobs:
           ruff format --check .
           pytest
           pytest integrations/transformers/tests
-          python scripts/check_public_release.py
       - name: Validate turn demo
         working-directory: turn-demo
         run: |
           ruff check .
           pytest
-          python scripts/check_public_release.py
       - name: Validate full-duplex demo
         working-directory: full-duplex-demo
         run: |
           ruff check .
           pytest
-          python scripts/check_public_release.py
           bash -n start_demo.sh scripts/run_app.sh

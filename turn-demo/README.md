@@ -91,5 +91,4 @@ Upload and microphone inference are also available. Uploads are limited to
 
 ```bash
 pytest
-python scripts/check_public_release.py
 ```

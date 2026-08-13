@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
-"""Export a training-repo MTP checkpoint into a vLLM-friendly directory.
+"""Export an X2 Turn Hugging Face checkpoint into a vLLM-friendly directory.
 
-Input layout (Voxtral-Mini-Realtime training output)::
+Input layout::
 
-    final/
+    X2-Turn-4B-0812/
       model.safetensors   # base_model.* + vad_lm_head.weight
       params.json / tekken.json / config.json / ...
 
 Output layout::
 
-    final_vllm/
+    X2-Turn-4B-0812-vllm/
       consolidated.safetensors  # mistral keys + vad_lm_head.weight
       params.json, tekken.json, ...
 
-Loading either ``final/`` (raw MTP) or ``final_vllm/`` works with this fork;
-the export is mainly for faster cold-start and easier inspection.
+Loading either the Hugging Face checkpoint or the exported directory works with
+this fork; the export is mainly for faster cold-start and easier inspection.
 """
 
 from __future__ import annotations

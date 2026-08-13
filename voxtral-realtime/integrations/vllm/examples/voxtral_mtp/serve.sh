@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-: "${MODEL:?Set MODEL to the exported final_vllm directory}"
+: "${MODEL:?Set MODEL to the exported X2 Turn vLLM directory}"
 VLLM_BIN="${VLLM_BIN:-vllm}"
 PORT="${PORT:-8011}"
 GPU_MEM="${GPU_MEM:-0.8}"
