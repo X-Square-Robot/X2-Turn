@@ -1,12 +1,13 @@
 <div align="center">
-  <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
+  <h1>
     <img
       src="full-duplex-demo/dialogue_system/frontend/x-square-logo.png"
       alt="X Square mascot"
-      width="84"
+      width="72"
+      align="center"
     >
-    <span style="font-size: 52px; line-height: 1.1; font-weight: 700;">X2-Turn</span>
-  </div>
+    X2-Turn
+  </h1>
   <p>
     <strong>Frame-synchronous streaming ASR and Turn-state prediction</strong>
   </p>
