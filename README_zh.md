@@ -16,6 +16,7 @@
   </p>
   <p>
     <a href="https://huggingface.co/Kaiqfu/X2-Turn-4B-0812"><img src="https://img.shields.io/badge/Hugging%20Face-X2--Turn--4B--0812-yellow" alt="Hugging Face 模型"></a>
+    <a href="https://arxiv.org/abs/2608.10878"><img src="https://img.shields.io/badge/arXiv-2608.10878-b31b1b" alt="X2-Turn 论文"></a>
     <img src="https://img.shields.io/badge/Python-3.10%2B-blue" alt="Python 3.10+">
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-green" alt="Apache-2.0"></a>
   </p>
@@ -31,6 +32,22 @@ X2 Turn 在 Voxtral Realtime 基础上提供两个同步输出：流式自动语
 话轮预测头输出 `idle`、`noidle`、`speaking`、`turn_end`、
 `backchannel` 或 `uncertain`。应用侧应对帧级结果进行平滑处理，
 不要将单帧预测直接视为不可撤销的动作。
+
+## 论文
+
+模型架构、ASR 锚定监督方法和中英文实验详见：
+**[X2-Turn: Frame-Synchronous Dual-Head Modeling for Joint Streaming ASR and
+Turn State Prediction](https://arxiv.org/abs/2608.10878)**
+（[PDF](https://arxiv.org/pdf/2608.10878)）。
+
+```bibtex
+@article{fu2026x2turn,
+  title={X2-Turn: Frame-Synchronous Dual-Head Modeling for Joint Streaming ASR and Turn State Prediction},
+  author={Fu, Kaiqi and Wen, Rime and Lin, Altman and Qin, Shawn and Gan, Roy and Wang, Hao and Wang, Qian},
+  journal={arXiv preprint arXiv:2608.10878},
+  year={2026}
+}
+```
 
 ## Demo
 

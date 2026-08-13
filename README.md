@@ -13,6 +13,7 @@
   </p>
   <p>
     <a href="https://huggingface.co/Kaiqfu/X2-Turn-4B-0812"><img src="https://img.shields.io/badge/Hugging%20Face-X2--Turn--4B--0812-yellow" alt="Hugging Face model"></a>
+    <a href="https://arxiv.org/abs/2608.10878"><img src="https://img.shields.io/badge/arXiv-2608.10878-b31b1b" alt="X2-Turn paper"></a>
     <img src="https://img.shields.io/badge/Python-3.10%2B-blue" alt="Python 3.10+">
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-green" alt="Apache-2.0"></a>
   </p>
@@ -28,6 +29,23 @@ automatic speech recognition and one turn-taking prediction every 80 ms.
 The turn head predicts `idle`, `noidle`, `speaking`, `turn_end`,
 `backchannel`, or `uncertain`. Applications should smooth these frame-level
 predictions instead of treating a single frame as an irreversible action.
+
+## Paper
+
+The architecture, ASR-anchored supervision, and bilingual evaluation are
+described in
+**[X2-Turn: Frame-Synchronous Dual-Head Modeling for Joint Streaming ASR and
+Turn State Prediction](https://arxiv.org/abs/2608.10878)**
+([PDF](https://arxiv.org/pdf/2608.10878)).
+
+```bibtex
+@article{fu2026x2turn,
+  title={X2-Turn: Frame-Synchronous Dual-Head Modeling for Joint Streaming ASR and Turn State Prediction},
+  author={Fu, Kaiqi and Wen, Rime and Lin, Altman and Qin, Shawn and Gan, Roy and Wang, Hao and Wang, Qian},
+  journal={arXiv preprint arXiv:2608.10878},
+  year={2026}
+}
+```
 
 ## Demos
 
