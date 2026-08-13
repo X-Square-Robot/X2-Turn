@@ -49,9 +49,18 @@ selector lets you hear the exact input before or after inference. The bundled
 16 kHz mono sample is synthetic; its text, provenance, license, and regeneration
 command are in [`assets/README.md`](assets/README.md).
 
-The server binds to `127.0.0.1` by default and has no authentication. If you
-set `HOST=0.0.0.0`, place it behind an authenticated HTTPS reverse proxy and
-do not expose uploaded speech to an untrusted network.
+The server binds to `127.0.0.1` by default and has no authentication. For
+development TLS, provide a certificate and key:
+
+```bash
+HOST=0.0.0.0 \
+SSL_CERTFILE=/path/to/cert.pem \
+SSL_KEYFILE=/path/to/key.pem \
+bash run.sh
+```
+
+For public deployments, prefer an authenticated HTTPS reverse proxy and do not
+expose uploaded speech to an untrusted network.
 
 ## Start with realtime vLLM
 

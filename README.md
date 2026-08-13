@@ -30,23 +30,6 @@ The turn head predicts `idle`, `noidle`, `speaking`, `turn_end`,
 `backchannel`, or `uncertain`. Applications should smooth these frame-level
 predictions instead of treating a single frame as an irreversible action.
 
-## Paper
-
-The architecture, ASR-anchored supervision, and bilingual evaluation are
-described in
-**[X2-Turn: Frame-Synchronous Dual-Head Modeling for Joint Streaming ASR and
-Turn State Prediction](https://arxiv.org/abs/2608.10878)**
-([PDF](https://arxiv.org/pdf/2608.10878)).
-
-```bibtex
-@article{fu2026x2turn,
-  title={X2-Turn: Frame-Synchronous Dual-Head Modeling for Joint Streaming ASR and Turn State Prediction},
-  author={Fu, Kaiqi and Wen, Rime and Lin, Altman and Qin, Shawn and Gan, Roy and Wang, Hao and Wang, Qian},
-  journal={arXiv preprint arXiv:2608.10878},
-  year={2026}
-}
-```
-
 ## Demos
 
 This repository includes two complementary browser demos:
@@ -143,19 +126,18 @@ For realtime serving, follow the
 [`vLLM integration guide`](voxtral-realtime/integrations/vllm/README.md).
 Stock vLLM does not emit the custom `turn.delta` events.
 
-## Release boundary
+## Citation
 
-Each component retains its own license and notices so it can be published
-separately. Model weights and model metadata are distributed through the
-[Hugging Face model repository](https://huggingface.co/Kaiqfu/X2-Turn-4B-0812),
-not this source repository. Never publish local logs, certificates, datasets,
-external checkouts, or credentials.
+If you find X2-Turn useful in your research, please cite:
 
-## Contributing and security
-
-Contributions are welcome. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before
-opening a large change, and report vulnerabilities according to
-[`SECURITY.md`](SECURITY.md).
+```bibtex
+@article{fu2026x2turn,
+  title = {X2-Turn: Frame-Synchronous Dual-Head Modeling for Joint Streaming ASR and Turn State Prediction},
+  author = {Fu, Kaiqi and Wen, Rime and Lin, Altman and Qin, Shawn and Gan, Roy and Wang, Hao and Wang, Qian},
+  journal = {arXiv preprint arXiv:2608.10878},
+  year = {2026},
+}
+```
 
 ## Acknowledgments
 

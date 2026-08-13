@@ -886,14 +886,25 @@ def parse_args():
     )
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=7860)
+    p.add_argument("--ssl-certfile", default="", help="optional TLS certificate")
+    p.add_argument("--ssl-keyfile", default="", help="optional TLS private key")
     return p.parse_args()
 
 
 def main():
     global ARGS
     ARGS = parse_args()
+    if bool(ARGS.ssl_certfile) != bool(ARGS.ssl_keyfile):
+        raise SystemExit("--ssl-certfile and --ssl-keyfile must be provided together")
     app = create_app()
-    uvicorn.run(app, host=ARGS.host, port=ARGS.port, log_level="info")
+    uvicorn.run(
+        app,
+        host=ARGS.host,
+        port=ARGS.port,
+        log_level="info",
+        ssl_certfile=ARGS.ssl_certfile or None,
+        ssl_keyfile=ARGS.ssl_keyfile or None,
+    )
 
 
 if __name__ == "__main__":
