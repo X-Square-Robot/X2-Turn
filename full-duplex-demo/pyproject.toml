@@ -22,6 +22,7 @@ dependencies = [
 [project.optional-dependencies]
 demo = [
   "edge-tts>=6.1",
+  "imageio-ffmpeg>=0.5",
   "soundfile>=0.12",
 ]
 llm = [

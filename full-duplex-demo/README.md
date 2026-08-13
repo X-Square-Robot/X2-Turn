@@ -57,7 +57,7 @@ checkout. Do not copy that source tree into this repository.
 
 Defaults are public model IDs and may be replaced with local paths:
 
-- Turn/ASR: `x-square/voxtral-mtp-turn-v3-delay0-zhen`
+- Turn/ASR: `Kaiqfu/X2-Turn-4B-0812`
 - LLM: `Qwen/Qwen2.5-3B-Instruct`
 - TTS: `FunAudioLLM/CosyVoice2-0.5B`
 
@@ -93,6 +93,11 @@ deployment.
 
 The launcher starts and health-checks TTS, LLM, the Voxtral server, the turn
 bridge, and the web app. Existing healthy Voxtral and TTS services are reused.
+
+`docker-compose.yml` is a deployment template, not a turnkey image build. Set
+`DEMO_IMAGE` to an image that already contains this checkout and its Python
+dependencies before using Compose. The source-based `start_demo.sh` path above
+is the supported quickstart.
 
 ```bash
 bash start_demo.sh stop      # stop bridge, LLM, and app

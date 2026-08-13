@@ -2,14 +2,16 @@
 
 实现说明
 ---------
-官方生产路径推荐 vLLM ``/v1/realtime``；但本仓库 MTP 还有自定义 ``vad_lm_head``，
-vLLM 无法直接出 6 类 turn。因此这里用:
+本模块是本地 Transformers 后端的演示路径，使用:
 
   **HF ONLINE processor 分块 ingest + 对累计缓冲做增量解码**
   （短句/体验打断拒识足够；与 offline 对齐口径一致）
 
 每 ``commit_ms``（默认 320ms）对当前缓冲跑一次 ``engine.infer_wav``，
 把新的 ASR / turn / policy 事件推给前端。
+
+生产流式路径请使用带 X2 Turn overlay 的 vLLM ``/v1/realtime``；对应实现位于
+``online_vllm.py``，可以直接接收 6 类 ``turn.delta``。
 """
 
 from __future__ import annotations

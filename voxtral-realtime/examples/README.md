@@ -30,7 +30,7 @@ From the `voxtral-realtime` directory:
 python examples/offline_inference.py \
   --audio /path/to/input.wav \
   --output-dir offline_output \
-  --model x-square/voxtral-mtp-turn-v3-delay0-zhen \
+  --model Kaiqfu/X2-Turn-4B-0812 \
   --vllm-url ws://127.0.0.1:8011/v1/realtime
 ```
 

@@ -18,7 +18,7 @@ services:
       - serve
       - ${VOXTRAL_VLLM_MODEL:-/models/voxtral/final_vllm}
       - --served-model-name
-      - ${VOXTRAL_MODEL:-x-square/voxtral-mtp-turn-v3-delay0-zhen}
+      - ${VOXTRAL_MODEL:-Kaiqfu/X2-Turn-4B-0812}
       - --host
       - 0.0.0.0
       - --port
@@ -44,7 +44,7 @@ services:
       - --vllm-url
       - ws://voxtral:8011/v1/realtime
       - --model
-      - ${VOXTRAL_MODEL:-x-square/voxtral-mtp-turn-v3-delay0-zhen}
+      - ${VOXTRAL_MODEL:-Kaiqfu/X2-Turn-4B-0812}
     ports: ["8000:8000"]
     depends_on:
       voxtral:

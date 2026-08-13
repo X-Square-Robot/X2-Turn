@@ -21,7 +21,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--model",
-        default="x-square/voxtral-mtp-turn-v3-delay0-zhen",
+        default="Kaiqfu/X2-Turn-4B-0812",
         help="Hugging Face model ID or local final/ directory",
     )
     parser.add_argument(

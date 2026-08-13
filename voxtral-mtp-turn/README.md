@@ -5,7 +5,7 @@ pipeline_tag: automatic-speech-recognition
 language:
   - zh
   - en
-library_name: vllm
+library_name: transformers
 tags:
   - realtime
   - turn-taking
@@ -30,9 +30,13 @@ The model uses a small wrapper from the `voxtral-realtime` code repository. It
 does not modify Transformers and does not require `trust_remote_code`.
 
 ```bash
-git clone https://github.com/x-square/voxtral-realtime.git
+cd /path/to/x2_turn_opensource
 python -m pip install -e "./voxtral-realtime[transformers]"
 ```
+
+The integration requires Transformers 5.10 or newer. The
+`transformers_version` stored in the checkpoint JSON records the export
+environment; it is not the supported minimum runtime version.
 
 ```python
 import torch
@@ -179,14 +183,14 @@ targets the canonical single-file layout. Runtime metadata also includes
 ## Release status and license
 
 The legacy proposed ID `x-square/voxtral-mtp-turn-v3-delay0-zhen` refers to the
-same selected `voxtral-mtp-turn-v3-delay0-zhen/final` checkpoint. The intended
-Hub destination is `Kaiqfu/X2-Turn-4B-0812`.
+same selected `voxtral-mtp-turn-v3-delay0-zhen/final` checkpoint. The canonical
+published Hub repository is `Kaiqfu/X2-Turn-4B-0812`.
 
-Before public upload, the release owner must approve the final release license,
-Mistral base-model terms, attribution, and all training-data collection,
-processing, privacy, consent, and redistribution rights. The Apache-2.0 files
-in this staging repository do not by themselves establish rights to the model
-weights or training data.
+The release owner remains responsible for the final release license, Mistral
+base-model terms, attribution, and all training-data collection, processing,
+privacy, consent, and redistribution rights. The Apache-2.0 files in this
+staging repository do not by themselves establish rights to the model weights
+or training data.
 
 Do not upload optimizer state, trainer state, datasets, raw audio, transcripts,
 credentials, logs, caches, private paths, or intermediate checkpoints. See

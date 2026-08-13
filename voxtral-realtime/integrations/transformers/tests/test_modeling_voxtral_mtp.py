@@ -117,7 +117,7 @@ def test_resolve_model_dir_downloads_hub_snapshot(tmp_path, monkeypatch):
     monkeypatch.setattr(huggingface_hub, "snapshot_download", fake_snapshot_download)
 
     resolved = modeling_module._resolve_model_dir(
-        "x-square/voxtral-mtp-turn-v3-delay0-zhen",
+        "Kaiqfu/X2-Turn-4B-0812",
         revision="release",
         local_files_only=True,
     )

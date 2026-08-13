@@ -27,6 +27,7 @@ dev = [
 ]
 transformers = [
   "huggingface-hub",
+  "mistral-common",
   "torch",
   "transformers>=5.10.0",
 ]

@@ -57,7 +57,7 @@ class Config:
     SAMPLE_RATE = 16000
     # Voxtral HF bridge shares one GPU model; keep pool small.
     VAD_POOL_SIZE = 4
-    PORT = int(os.environ.get("DEMO_PORT", "55556"))
+    PORT = int(os.environ.get("DEMO_PORT", "8443"))
 
 
 class ChatSession:

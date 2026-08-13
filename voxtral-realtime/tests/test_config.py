@@ -7,4 +7,4 @@ def test_environment_config_and_public_model_default():
     )
     assert config.port == 9000
     assert config.lead_in_gate is False
-    assert config.model_id == "x-square/voxtral-mtp-turn-v3-delay0-zhen"
+    assert config.model_id == "Kaiqfu/X2-Turn-4B-0812"

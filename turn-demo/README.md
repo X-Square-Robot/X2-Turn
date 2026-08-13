@@ -50,8 +50,8 @@ then run:
 ```bash
 cd turn-demo
 BACKEND=vllm \
-VLLM_URL=ws://127.0.0.1:8010/v1/realtime \
-VLLM_MODEL=x2-turn-vllm \
+VLLM_URL=ws://127.0.0.1:8011/v1/realtime \
+VLLM_MODEL=Kaiqfu/X2-Turn-4B-0812 \
 bash run.sh
 ```
 
@@ -70,7 +70,9 @@ not latency benchmarking.
 - These are demo defaults, not universal product thresholds.
 
 Optional scenario JSONL files can be supplied with `--test_jsonl`. No dataset,
-audio, or internal evaluation path is bundled with this repository.
+audio, or internal evaluation path is bundled with this repository, so the
+preset-scenario list is empty by default. Upload and microphone inference remain
+available. Uploads are limited to 20 MiB.
 
 ## Validate
 

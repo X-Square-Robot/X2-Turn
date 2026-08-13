@@ -5,7 +5,7 @@ from modules.utils.MyTn.cn_tn import TextNorm
 
 
 class IndexTTS_VLLM:
-    def __init__(self, speaker: str = "elva", api_url: str = "http://127.0.0.1:6006/tts"):
+    def __init__(self, speaker: str = "elva", api_url: str = "http://127.0.0.1:6017/tts"):
         self.speaker = speaker
         self.api_url = api_url
         self.normalizer = TextNorm()
@@ -71,7 +71,7 @@ class IndexTTS_VLLM:
 if __name__ == "__main__":
     import time
 
-    tts = IndexTTS_VLLM("elva", api_url="http://0.0.0.0:6006/tts")
+    tts = IndexTTS_VLLM("elva", api_url="http://127.0.0.1:6017/tts")
     text = "Next time you can go earlier or choose a time with fewer people."
     start_time = time.time()
     wav = tts.synthesize(text)

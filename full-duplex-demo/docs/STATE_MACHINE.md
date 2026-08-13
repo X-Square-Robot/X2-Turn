@@ -1,6 +1,6 @@
 # X Square Demo 状态轮转逻辑（基于 Voxtral 80ms Turn 流）
 
-模型：`x-square/voxtral-mtp-turn-v3-delay0-zhen`
+模型：`Kaiqfu/X2-Turn-4B-0812`
 帧周期：**80ms / 状态**（`audio_length_per_tok=8`, 16kHz, hop=160 → 8×160/16000 = 0.08s）
 
 当前 demo 栈：
@@ -36,7 +36,7 @@ vLLM realtime 每个 `turn.delta` 带 `frame_index`，表示**第几个 80ms 帧
 
 ### 1.2 训练标签长什么样？
 
-`build_turn_streaming_labels()`（`models/voxtral_asr/data.py`）：
+训练代码不随推理仓库发布；公开的标签契约如下：
 
 1. 先铺一条长度 = 总生成帧数的数组，**默认全是 `idle`**
 2. 再把每个字/词的 turn 类（bc / noidle / speaking / turn_end）**写到 ASR 对齐到的帧区间**
@@ -174,7 +174,7 @@ Bridge 也可收 `type=control` + `bot_speaking`（备用）。
 
 ## 5. 部署备注
 
-- VAD 模型：`x-square/voxtral-mtp-turn-v3-delay0-zhen`
+- VAD 模型：`Kaiqfu/X2-Turn-4B-0812`
 - TTS：CosyVoice2 `:6017`（`TTS_API_URL`）
 - UI：`https://localhost:8443`
 
@@ -184,6 +184,6 @@ Bridge 也可收 `type=control` + `bot_speaking`（备用）。
 VOXTRAL_END_CONFIRM_FRAMES=1 \
 VOXTRAL_SILENCE_END_FRAMES=3 \
 voxtral-realtime serve \
-  --model x-square/voxtral-mtp-turn-v3-delay0-zhen \
+  --model Kaiqfu/X2-Turn-4B-0812 \
   --vllm-url ws://127.0.0.1:8011/v1/realtime
 ```

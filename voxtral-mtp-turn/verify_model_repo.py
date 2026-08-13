@@ -19,6 +19,11 @@ REQUIRED_FILES = {
     ".gitattributes",
     ".gitignore",
     "config.example.json",
+    "config.json",
+    "generation_config.json",
+    "params.json",
+    "processor_config.json",
+    "tekken.json",
     "verify_model_repo.py",
 }
 
@@ -47,7 +52,7 @@ EXPECTED_FRONTMATTER = {
     "license": "apache-2.0",
     "base_model": "mistralai/Voxtral-Mini-4B-Realtime-2602",
     "pipeline_tag": "automatic-speech-recognition",
-    "library_name": "vllm",
+    "library_name": "transformers",
 }
 
 TEXT_SUFFIXES = {".md", ".json", ".py", ".txt", ""}

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from html import escape
 from typing import List, Optional
 
 try:
@@ -40,7 +41,7 @@ def timeline_html(
         t = turns[i]
         color = TURN_COLOR.get(t, "#ddd")
         t0 = i * seconds_per_token
-        title = f"f{i} {t0:.2f}s {t}"
+        title = escape(f"f{i} {t0:.2f}s {t}", quote=True)
         cells.append(
             f'<div title="{title}" style="flex:1;min-width:2px;height:28px;'
             f'background:{color};"></div>'
@@ -72,6 +73,10 @@ def timeline_html(
 
 def decision_banner(decision: DemoDecision) -> str:
     color = ACTION_COLOR.get(decision.action, "#6b7280")
+    action = escape(str(decision.action))
+    last_turn = escape(str(decision.last_turn))
+    reason = escape(str(decision.reason))
+    asr_text = escape(str(decision.asr_text or "(empty)"))
     barge = (
         f'<div style="margin-top:4px;color:#dc2626;">⚡ barge-in @ '
         f"{decision.barge_in_at_s:.2f}s</div>"
@@ -81,10 +86,10 @@ def decision_banner(decision: DemoDecision) -> str:
     return f"""
 <div style="padding:14px 16px;border-radius:10px;background:{color}18;
             border:1px solid {color};font-family:ui-sans-serif,system-ui;">
-  <div style="font-size:22px;font-weight:700;color:{color};">{decision.action}</div>
-  <div style="margin-top:6px;color:#111827;">末态 turn = <b>{decision.last_turn}</b></div>
-  <div style="margin-top:4px;color:#4b5563;">{decision.reason}</div>
-  <div style="margin-top:4px;color:#111827;">ASR: {decision.asr_text or '(empty)'}</div>
+  <div style="font-size:22px;font-weight:700;color:{color};">{action}</div>
+  <div style="margin-top:6px;color:#111827;">末态 turn = <b>{last_turn}</b></div>
+  <div style="margin-top:4px;color:#4b5563;">{reason}</div>
+  <div style="margin-top:4px;color:#111827;">ASR: {asr_text}</div>
   {barge}
 </div>
 """
@@ -113,11 +118,12 @@ def events_table(events: List[FrameEvent], only_interesting: bool = True) -> str
             f"<tr>"
             f"<td>{ev.frame}</td>"
             f"<td>{ev.t0:.2f}-{ev.t1:.2f}</td>"
-            f"<td>{ev.asr}</td>"
-            f"<td style='color:{TURN_COLOR.get(ev.turn,'#000')}'>{ev.turn}</td>"
+            f"<td>{escape(str(ev.asr))}</td>"
+            f"<td style='color:{TURN_COLOR.get(ev.turn,'#000')}'>"
+            f"{escape(str(ev.turn))}</td>"
             f"<td>{ev.turn_prob:.2f}</td>"
-            f"<td>{ev.action}</td>"
-            f"<td>{ev.note}</td>"
+            f"<td>{escape(str(ev.action))}</td>"
+            f"<td>{escape(str(ev.note))}</td>"
             f"</tr>"
         )
     if not rows:

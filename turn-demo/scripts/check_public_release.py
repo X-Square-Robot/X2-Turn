@@ -29,6 +29,7 @@ TEXT_SUFFIXES = {
     ".py",
     ".toml",
     ".md",
+    ".sh",
     ".txt",
     ".yml",
     ".yaml",

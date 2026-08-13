@@ -55,7 +55,7 @@ _SPEECH_TURNS: Set[str] = {
     "uncertain",
 }
 
-DEFAULT_VLLM_URL = "ws://127.0.0.1:8010/v1/realtime"
+DEFAULT_VLLM_URL = "ws://127.0.0.1:8011/v1/realtime"
 DEFAULT_SECONDS_PER_TOKEN = 0.08  # 8 mel hops @ 16 kHz
 CHUNK_BYTES = 4096
 DEFAULT_RECV_TIMEOUT_S = 60.0

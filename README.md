@@ -44,14 +44,15 @@ for frame in result.turn_frames:
     print(frame.start_ms, frame.end_ms, frame.label, frame.confidence)
 ```
 
-Until the model is available on the Hub, `model_id` can be a local
-`voxtral-mtp-turn/final` directory.
+The published Hub model is `Kaiqfu/X2-Turn-4B-0812`. For offline or private
+deployments, `model_id` can instead be a local `voxtral-mtp-turn/final`
+directory.
 
 For a ready-to-run command that also writes JSON:
 
 ```bash
-python integrations/transformers/examples/offline_inference.py \
-  --model /path/to/voxtral-mtp-turn \
+python voxtral-realtime/integrations/transformers/examples/offline_inference.py \
+  --model Kaiqfu/X2-Turn-4B-0812 \
   --audio /path/to/input.wav \
   --output offline_frames.json
 ```
@@ -79,8 +80,9 @@ Stock vLLM does not emit the custom `turn.delta` events.
 
 ```bash
 cd voxtral-realtime
-python -m pip install -e ".[dev]"
+python -m pip install -e ".[dev,transformers]"
 pytest
+pytest integrations/transformers/tests
 python scripts/check_public_release.py
 
 cd ../voxtral-mtp-turn

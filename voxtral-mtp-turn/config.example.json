@@ -2,7 +2,7 @@
   "_documentation_only": true,
   "_loadable": false,
   "_warning": "Architecture contract example only. Do not rename to config.json or pass to a model loader.",
-  "proposed_model_id": "x-square/voxtral-mtp-turn-v3-delay0-zhen",
+  "proposed_model_id": "Kaiqfu/X2-Turn-4B-0812",
   "base_model": "mistralai/Voxtral-Mini-4B-Realtime-2602",
   "inspected_checkpoint_config": {
     "architectures": [
@@ -42,7 +42,7 @@
   },
   "serving_contract": {
     "package": "voxtral-realtime",
-    "compatible_version": "TBD_OWNER_VALIDATION_REQUIRED",
+    "compatible_version": ">=0.1.0,<0.2.0",
     "stock_transformers_loadable": false,
     "stock_vllm_loadable": false
   }

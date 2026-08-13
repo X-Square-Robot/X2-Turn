@@ -8,8 +8,8 @@
 
   # vLLM（对接已启动的 MTP realtime 服务）
   python -m demo_turn.server --backend vllm \\
-      --vllm-url ws://127.0.0.1:8010/v1/realtime \\
-      --vllm-model x2-turn-vllm \\
+      --vllm-url ws://127.0.0.1:8011/v1/realtime \\
+      --vllm-model Kaiqfu/X2-Turn-4B-0812 \\
       --port 7860
 
 页面上点「开始 Online 流式」即可边说边看 ASR / turn / 决策。
@@ -53,6 +53,7 @@ ARGS = None
 ENGINE = None  # TurnDemoEngine | TurnDemoVLLMEngine
 SCENARIOS = []
 INFER_LOCK = threading.Lock()
+MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 
 
 class ScenarioReq(BaseModel):
@@ -654,9 +655,16 @@ def create_app() -> FastAPI:
     @app.on_event("startup")
     def _startup():
         global SCENARIOS
-        SCENARIOS = build_scenarios(ARGS.test_jsonl)
+        SCENARIOS = build_scenarios(ARGS.test_jsonl, ARGS.preds_jsonl)
         print(f"[demo] {len(SCENARIOS)} scenarios", flush=True)
-        get_engine()
+
+    @app.get("/health")
+    def health():
+        return {
+            "status": "ok",
+            "backend": ARGS.backend,
+            "model_loaded": ENGINE is not None,
+        }
 
     @app.get("/", response_class=HTMLResponse)
     def index():
@@ -677,14 +685,13 @@ def create_app() -> FastAPI:
                     "expect": s.expect,
                     "text": s.text,
                     "tip": s.tip,
-                    "wav": s.wav,
                 }
                 for s in SCENARIOS
             ]
         }
 
     @app.post("/api/run_scenario")
-    def api_run_scenario(payload: ScenarioReq = Body(...)):
+    async def api_run_scenario(payload: ScenarioReq = Body(...)):
         key = (payload.key or "").strip()
         barge = int(payload.barge_in_frames or 4)
         if not key:
@@ -693,7 +700,12 @@ def create_app() -> FastAPI:
         if sc is None:
             return JSONResponse({"error": f"unknown scenario {key}"}, status_code=404)
         try:
-            out = run_one(sc.wav, bot_speaking=(sc.mode == "barge_in"), barge_in_frames=barge)
+            out = await asyncio.to_thread(
+                run_one,
+                sc.wav,
+                sc.mode == "barge_in",
+                barge,
+            )
             out["scenario"] = {
                 "key": sc.key,
                 "title": sc.title,
@@ -714,7 +726,12 @@ def create_app() -> FastAPI:
         # Must not call blocking GPU / asyncio.run on the event loop thread
         # (breaks vLLM offline + freezes WebSockets). Offload to a worker.
         suffix = os.path.splitext(file.filename or "up.wav")[1] or ".wav"
-        raw = await file.read()
+        raw = await file.read(MAX_UPLOAD_BYTES + 1)
+        if len(raw) > MAX_UPLOAD_BYTES:
+            return JSONResponse(
+                {"error": "upload exceeds the 20 MiB limit"},
+                status_code=413,
+            )
         tmp_paths: List[str] = []
         try:
             fd, path = tempfile.mkstemp(suffix=suffix, prefix="demo_turn_up_")
@@ -794,7 +811,7 @@ def create_app() -> FastAPI:
                         if isinstance(session, OnlineVLLMSession):
                             upd = await session.finish()
                         else:
-                            upd = session.finish()
+                            upd = await asyncio.to_thread(session.finish)
                         payload = upd.to_dict()
                         payload["type"] = "final"
                         payload["backend"] = ARGS.backend
@@ -813,7 +830,7 @@ def create_app() -> FastAPI:
                     if isinstance(session, OnlineVLLMSession):
                         upd = await session.push_pcm(pcm)
                     else:
-                        upd = session.push_pcm(pcm)
+                        upd = await asyncio.to_thread(session.push_pcm, pcm)
                     if upd is not None:
                         payload = upd.to_dict()
                         payload["type"] = "update"
@@ -864,6 +881,11 @@ def parse_args():
         "--test_jsonl",
         default="",
         help="optional local scenario JSONL; upload and microphone work without it",
+    )
+    p.add_argument(
+        "--preds_jsonl",
+        default="",
+        help="optional evaluated predictions JSONL used to select preset scenarios",
     )
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=7860)

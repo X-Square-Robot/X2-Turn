@@ -23,7 +23,7 @@ from voxtral_realtime.transformers import (
     load_mtp_checkpoint,
 )
 
-model_id = "x-square/voxtral-mtp-turn-v3-delay0-zhen"
+model_id = "Kaiqfu/X2-Turn-4B-0812"
 processor = AutoProcessor.from_pretrained(model_id)
 model = load_mtp_checkpoint(
     model_id,
@@ -51,7 +51,7 @@ The same loading example is available as a script:
 
 ```bash
 python integrations/transformers/examples/load_checkpoint.py \
-  --model x-square/voxtral-mtp-turn-v3-delay0-zhen
+  --model Kaiqfu/X2-Turn-4B-0812
 ```
 
 To transcribe one file and print all six-class turn predictions on the 80 ms
