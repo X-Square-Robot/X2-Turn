@@ -1,4 +1,4 @@
-"""Enforce English release text outside the bilingual root README.
+"""Enforce English release text outside the Chinese root README.
 
 Files containing Chinese-language normalization or test data are explicitly
 allowlisted because translating those literals would change product behavior.
@@ -24,7 +24,7 @@ TEXT_SUFFIXES = {
 }
 
 ALLOWED_CJK_FILES = {
-    Path("README.md"),  # The repository entry point is intentionally bilingual.
+    Path("README_zh.md"),  # The Chinese repository entry point.
     # Functional Chinese-language data; translating literals changes behavior.
     Path("full-duplex-demo/dialogue_system/clients/tts_client.py"),
     Path("full-duplex-demo/dialogue_system/modules/utils/MyTn/cn_tn.py"),
