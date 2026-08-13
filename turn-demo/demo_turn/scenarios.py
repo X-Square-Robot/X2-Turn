@@ -9,6 +9,10 @@ from typing import Dict, List, Optional
 
 DEFAULT_TEST_JSONL = ""
 DEFAULT_PREDS_JSONL = ""
+BUILTIN_SAMPLE = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "assets", "sample_en.wav")
+)
+BUILTIN_TEXT = "Hello, could you tell me what the weather is like today?"
 
 
 @dataclass
@@ -110,6 +114,17 @@ def build_scenarios(
 ) -> List[Scenario]:
     pool = load_scenario_pool(test_jsonl, preds_jsonl, per_cat=8)
     out: List[Scenario] = []
+    if os.path.isfile(BUILTIN_SAMPLE):
+        out.append(
+            Scenario(
+                key="builtin_sample_en",
+                title="[built-in] English question",
+                category="complete",
+                wav=BUILTIN_SAMPLE,
+                text=BUILTIN_TEXT,
+                tip="Bundled synthetic Quickstart audio",
+            )
+        )
 
     def pick(cat: str, i: int = 0) -> Optional[dict]:
         xs = pool.get(cat) or []

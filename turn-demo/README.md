@@ -43,6 +43,12 @@ Open <http://localhost:7860>. The model loads on first startup. Set
 `DEVICE=cpu` only for small tests; the 4B checkpoint is intended for a
 CUDA-capable machine.
 
+Select **[built-in] English question** and click **Run scenario** to test the
+model without recording or uploading audio. The browser player below the preset
+selector lets you hear the exact input before or after inference. The bundled
+16 kHz mono sample is synthetic; its text, provenance, license, and regeneration
+command are in [`assets/README.md`](assets/README.md).
+
 The server binds to `127.0.0.1` by default and has no authentication. If you
 set `HOST=0.0.0.0`, place it behind an authenticated HTTPS reverse proxy and
 do not expose uploaded speech to an untrusted network.
@@ -76,10 +82,10 @@ contains only frame time, ASR token, Turn class, and probability—no action or
 decision column. Applications should define their own response, rejection, and
 barge-in policies for their latency and interaction requirements.
 
-Optional scenario JSONL files can be supplied with `--test_jsonl`. No dataset,
-audio, or internal evaluation path is bundled with this repository, so the
-preset-scenario list is empty by default. Upload and microphone inference remain
-available. Uploads are limited to 20 MiB.
+Optional scenario JSONL files can be supplied with `--test_jsonl`. The built-in
+synthetic Quickstart sample remains available without an external dataset.
+Upload and microphone inference are also available. Uploads are limited to
+20 MiB.
 
 ## Validate
 

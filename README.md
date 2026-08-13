@@ -44,7 +44,7 @@ model = load_mtp_checkpoint(
     dtype=torch.bfloat16,
 ).eval()
 
-result = infer_asr_turn(model, processor, "/path/to/input.wav")
+result = infer_asr_turn(model, processor, "turn-demo/assets/sample_en.wav")
 
 print("ASR:", result.transcript)
 for frame in result.turn_frames:
@@ -60,9 +60,13 @@ For a ready-to-run command that also writes JSON:
 ```bash
 python voxtral-realtime/integrations/transformers/examples/offline_inference.py \
   --model Kaiqfu/X2-Turn-4B-0812 \
-  --audio /path/to/input.wav \
+  --audio turn-demo/assets/sample_en.wav \
   --output offline_frames.json
 ```
+
+The bundled sample is synthetic 16 kHz mono speech. Its text, provenance,
+license, and reproducible FFmpeg command are documented in
+[`turn-demo/assets/README.md`](turn-demo/assets/README.md).
 
 ## Repository layout
 

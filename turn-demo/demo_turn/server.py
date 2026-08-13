@@ -131,7 +131,7 @@ INDEX_HTML = """<!DOCTYPE html>
   :root { --bg:#f8fafc; --card:#fff; --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; }
   * { box-sizing: border-box; }
   body { margin:0; font-family: ui-sans-serif, system-ui, "PingFang SC", "Noto Sans SC", sans-serif;
-         background: linear-gradient(160deg,#eef2ff 0%,#f8fafc 40%,#ecfeff 100%);
+         background: #fff;
          color: var(--ink); min-height:100vh; }
   .wrap { max-width: 980px; margin: 0 auto; padding: 28px 18px 60px; }
   .brand { display:flex;align-items:center;gap:14px;margin-bottom:22px; }
@@ -164,8 +164,7 @@ INDEX_HTML = """<!DOCTYPE html>
     <div class="brand-copy">
       <h1>X2 Turn Demo</h1>
       <div class="sub">实时查看 ASR 文本和每 80ms 一帧的原始 Turn 模型输出。
-      六类状态: idle / noidle / speaking / turn_end / backchannel / uncertain。
-      后端: <b id="backend_tag">__BACKEND__</b></div>
+      六类状态: idle / noidle / speaking / turn_end / backchannel / uncertain。</div>
     </div>
   </div>
 
@@ -191,6 +190,8 @@ INDEX_HTML = """<!DOCTYPE html>
       </div>
     </div>
     <div class="tip" id="scene_tip"></div>
+    <audio id="scenario_playback" controls preload="metadata"
+      style="width:100%;margin-top:10px;display:none;"></audio>
   </div>
 
   <div class="card">
@@ -264,6 +265,14 @@ async function init() {
     const s = SCENARIOS.find(x => x.key === sel.value);
     document.getElementById('scene_tip').textContent =
       s ? `${s.tip} · 文本: ${s.text}` : '';
+    const audio = document.getElementById('scenario_playback');
+    if (s) {
+      audio.src = `/api/scenario_audio/${encodeURIComponent(s.key)}`;
+      audio.style.display = 'block';
+    } else {
+      audio.removeAttribute('src');
+      audio.style.display = 'none';
+    }
   };
   sel.onchange();
 }
@@ -671,10 +680,7 @@ def create_app() -> FastAPI:
 
     @app.get("/", response_class=HTMLResponse)
     def index():
-        tag = "vLLM /v1/realtime" if ARGS.backend == "vllm" else "HF (local GPU)"
-        if ARGS.backend == "vllm":
-            tag += f" · {ARGS.vllm_url}"
-        return INDEX_HTML.replace("__BACKEND__", tag)
+        return INDEX_HTML
 
     @app.get("/api/scenarios")
     def api_scenarios():
@@ -691,6 +697,13 @@ def create_app() -> FastAPI:
             ]
         }
 
+    @app.get("/api/scenario_audio/{key}", response_class=FileResponse)
+    def api_scenario_audio(key: str):
+        scenario = next((item for item in SCENARIOS if item.key == key), None)
+        if scenario is None or not os.path.isfile(scenario.wav):
+            return JSONResponse({"error": "unknown scenario"}, status_code=404)
+        return FileResponse(scenario.wav, media_type="audio/wav")
+
     @app.post("/api/run_scenario")
     async def api_run_scenario(payload: ScenarioReq = Body(...)):
         key = (payload.key or "").strip()
@@ -706,6 +719,7 @@ def create_app() -> FastAPI:
                 "title": sc.title,
                 "tip": sc.tip,
                 "text": sc.text,
+                "audio_url": f"/api/scenario_audio/{sc.key}",
             }
             return out
         except Exception as e:
