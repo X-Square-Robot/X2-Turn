@@ -1,13 +1,12 @@
 <div align="center">
-  <h1>
+  <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
     <img
       src="full-duplex-demo/dialogue_system/frontend/x-square-logo.png"
       alt="X Square 吉祥物"
-      width="72"
-      align="center"
+      width="84"
     >
-    X2-Turn
-  </h1>
+    <span style="font-size: 52px; line-height: 1.1; font-weight: 700;">X2-Turn</span>
+  </div>
   <p>
     <strong>帧同步流式 ASR 与话轮状态预测</strong>
   </p>
