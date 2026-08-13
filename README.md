@@ -89,8 +89,7 @@ for frame in result.turn_frames:
 ```
 
 The published Hub model is `Kaiqfu/X2-Turn-4B-0812`. For offline or private
-deployments, `model_id` can instead be a local `voxtral-mtp-turn/final`
-directory.
+deployments, `model_id` can instead be a local checkpoint directory.
 
 For a ready-to-run command that also writes JSON:
 
@@ -110,9 +109,6 @@ license, and reproducible FFmpeg command are documented in
 - [`voxtral-realtime/`](voxtral-realtime/README.md) contains the model wrapper,
   local ASR + turn inference, the realtime controller, and the patched vLLM
   integration. Start here when integrating the model into another project.
-- [`voxtral-mtp-turn/`](voxtral-mtp-turn/README.md) is the Model Hub release
-  staging directory: Model Card, configuration, tokenizer metadata, release
-  checks, and optionally the approved weights.
 - [`turn-demo/`](turn-demo/README.md) is the focused browser demo for testing
   raw ASR, 80 ms Turn states, and the frame-level token/class/probability table
   without an LLM, TTS service, or product decision policy.
@@ -132,12 +128,10 @@ Stock vLLM does not emit the custom `turn.delta` events.
 ## Release boundary
 
 Each component retains its own license and notices so it can be published
-separately. The canonical model weight may exist locally, but this source
-repository ignores it. Publish weights to the approved Model Hub only after
-completing
-[`MODEL_RELEASE_CHECKLIST.md`](voxtral-mtp-turn/MODEL_RELEASE_CHECKLIST.md).
-Never publish local logs, certificates, datasets, external checkouts, or
-credentials.
+separately. Model weights and model metadata are distributed through the
+[Hugging Face model repository](https://huggingface.co/Kaiqfu/X2-Turn-4B-0812),
+not this source repository. Never publish local logs, certificates, datasets,
+external checkouts, or credentials.
 
 ## Acknowledgments
 

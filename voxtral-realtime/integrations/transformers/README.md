@@ -59,7 +59,7 @@ timeline:
 
 ```bash
 python integrations/transformers/examples/offline_inference.py \
-  --model /path/to/voxtral-mtp-turn \
+  --model /path/to/X2-Turn-4B-0812 \
   --audio /path/to/input.wav \
   --output offline_frames.json
 ```

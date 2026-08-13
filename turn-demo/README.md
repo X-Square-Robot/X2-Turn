@@ -35,8 +35,8 @@ Use either a Hugging Face model ID or a local checkpoint directory:
 cd turn-demo
 MODEL=Kaiqfu/X2-Turn-4B-0812 bash run.sh
 
-# Before the Hub upload is available:
-MODEL=/path/to/voxtral-mtp-turn bash run.sh
+# For a local or private checkpoint:
+MODEL=/path/to/X2-Turn-4B-0812 bash run.sh
 ```
 
 Open <http://localhost:7860>. The model loads on first startup. Set

@@ -81,7 +81,7 @@ directory. Follow `../voxtral-realtime/integrations/vllm/README.md` to apply the
 pinned vLLM overlay and export the weights, then set:
 
 ```bash
-VOXTRAL_VLLM_MODEL=/path/to/voxtral-mtp-turn-v3-delay0-zhen/final_vllm
+VOXTRAL_VLLM_MODEL=/path/to/X2-Turn-4B-0812-vllm
 ```
 
 ## Quickstart

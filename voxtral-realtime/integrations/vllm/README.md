@@ -24,24 +24,25 @@ under `integrations/vllm/`; `tests/test_overlay.py` guards the expected file set
 
 ## Convert canonical weights
 
-The canonical open-source training checkpoint is the directory named `final`
-for `voxtral-mtp-turn-v3-delay0-zhen`. vLLM should load its generated sibling
-`final_vllm`, which uses Mistral keys in `consolidated.safetensors` and includes
-`vad_lm_head.weight`.
+Download `Kaiqfu/X2-Turn-4B-0812` from the Model Hub or use an equivalent local
+checkpoint directory. vLLM should load the exported directory, which uses
+Mistral keys in `consolidated.safetensors` and includes `vad_lm_head.weight`.
 
 ```bash
 python integrations/vllm/tools/export_mtp_for_vllm.py \
-  --src /path/to/voxtral-mtp-turn-v3-delay0-zhen/final \
-  --dst /path/to/voxtral-mtp-turn-v3-delay0-zhen/final_vllm \
+  --src /path/to/X2-Turn-4B-0812 \
+  --dst /path/to/X2-Turn-4B-0812-vllm \
   --base /path/to/Voxtral-Mini-4B-Realtime-2602
 ```
 
-`--base` is optional only when `final` already contains `params.json` and
-`tekken.json`. Do not copy the HF `config.json` into `final_vllm`; vLLM uses
-`params.json` for the required audio configuration.
+`--base` is optional only when the source checkpoint already contains
+`params.json` and `tekken.json`. Do not copy the HF `config.json` into the
+exported directory; vLLM uses `params.json` for the required audio
+configuration.
 
 Serve `final_vllm` while exposing the public model name expected by the bridge:
 
 ```bash
-MODEL=/path/to/final_vllm bash integrations/vllm/examples/voxtral_mtp/serve.sh
+MODEL=/path/to/X2-Turn-4B-0812-vllm \
+  bash integrations/vllm/examples/voxtral_mtp/serve.sh
 ```

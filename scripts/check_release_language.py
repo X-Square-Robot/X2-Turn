@@ -32,7 +32,6 @@ ALLOWED_CJK_FILES = {
     Path("full-duplex-demo/tests/test_frame_turn_controller.py"),
     Path("full-duplex-demo/voxtral_bridge/tts_server.py"),
     Path("full-duplex-demo/voxtral_bridge/tts_server_cosyvoice.py"),
-    Path("voxtral-mtp-turn/README.md"),  # Mandarin backchannel examples.
     Path("voxtral-realtime/src/voxtral_realtime/turn/controller.py"),
 }
 

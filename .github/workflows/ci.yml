@@ -45,6 +45,3 @@ jobs:
           pytest
           python scripts/check_public_release.py
           bash -n start_demo.sh scripts/run_app.sh
-      - name: Validate model staging repository
-        working-directory: voxtral-mtp-turn
-        run: python verify_model_repo.py --allow-weights

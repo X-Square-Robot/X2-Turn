@@ -88,7 +88,7 @@ for frame in result.turn_frames:
 ```
 
 已发布的 Hub 模型为 `Kaiqfu/X2-Turn-4B-0812`。离线或私有部署时，
-`model_id` 也可以指向本地 `voxtral-mtp-turn/final` 目录。
+`model_id` 也可以指向本地 checkpoint 目录。
 
 下面的命令可以直接运行推理并写出 JSON：
 
@@ -107,8 +107,6 @@ FFmpeg 生成命令记录在
 
 - [`voxtral-realtime/`](voxtral-realtime/README.md)：模型封装、本地 ASR +
   Turn 推理、实时控制器及 patched vLLM 集成。集成模型时建议从这里开始。
-- [`voxtral-mtp-turn/`](voxtral-mtp-turn/README.md)：Model Hub 发布准备目录，
-  包括模型卡、配置、Tokenizer 元数据、发布检查以及审核通过后的权重。
 - [`turn-demo/`](turn-demo/README.md)：专注展示原始 ASR、80 毫秒 Turn 状态和
   帧级 token/class/probability 的浏览器 Demo，不依赖 LLM、TTS 或产品决策策略。
 - [`full-duplex-demo/`](full-duplex-demo/README.md)：将 X2 Turn 与可选 LLM、
@@ -124,10 +122,10 @@ Torch 与 CUDA 依赖冲突。
 
 ## 发布边界
 
-每个组件均保留独立的许可证与 Notice，因此可以分别发布。标准模型权重可能存在于
-本地，但源码仓库会忽略该文件。只有完成
-[`MODEL_RELEASE_CHECKLIST.md`](voxtral-mtp-turn/MODEL_RELEASE_CHECKLIST.md)
-后，才能将权重发布到审核通过的 Model Hub。
+每个组件均保留独立的许可证与 Notice，因此可以分别发布。模型权重和模型元数据
+统一通过
+[Hugging Face 模型仓库](https://huggingface.co/Kaiqfu/X2-Turn-4B-0812)
+发布，不进入本源码仓库。
 
 禁止发布本地日志、证书、数据集、外部源码目录或任何凭据。
 
