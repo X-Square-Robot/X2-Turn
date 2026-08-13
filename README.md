@@ -1,4 +1,23 @@
-# X2 Turn
+<div align="center">
+  <img
+    src="full-duplex-demo/dialogue_system/frontend/x-square-logo.png"
+    alt="X Square mascot"
+    width="180"
+  >
+  <h1>X2 Turn</h1>
+  <p>
+    <strong>Frame-synchronous streaming ASR and Turn-state prediction</strong>
+  </p>
+  <p>
+    One Voxtral-based model, two synchronized outputs, and one Turn prediction
+    every 80 ms.
+  </p>
+  <p>
+    <a href="https://huggingface.co/Kaiqfu/X2-Turn-4B-0812"><img src="https://img.shields.io/badge/Hugging%20Face-X2--Turn--4B--0812-yellow" alt="Hugging Face model"></a>
+    <img src="https://img.shields.io/badge/Python-3.10%2B-blue" alt="Python 3.10+">
+    <img src="https://img.shields.io/badge/License-Apache%202.0-green" alt="Apache-2.0">
+  </p>
+</div>
 
 [English](#english) | [中文](#中文)
 
