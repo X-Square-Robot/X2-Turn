@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """Turn Demo Web UI (FastAPI) — ASR + raw turn states.
 
-用法:
-  # HF（本机加载 MTP）
+Usage:
+  # HF (load MTP locally)
   CUDA_VISIBLE_DEVICES=0 python -m demo_turn.server \\
       --model Kaiqfu/X2-Turn-4B-0812 --port 7860
 
-  # vLLM（对接已启动的 MTP realtime 服务）
+  # vLLM (connect to a running MTP realtime service)
   python -m demo_turn.server --backend vllm \\
       --vllm-url ws://127.0.0.1:8011/v1/realtime \\
       --vllm-model Kaiqfu/X2-Turn-4B-0812 \\
       --port 7860
 
-页面上点「开始 Online 流式」即可边说边看 ASR / turn / 决策。
+Click "Start Online Streaming" to view ASR, turn states, and decisions as you speak.
 """
 
 from __future__ import annotations
@@ -122,7 +122,7 @@ def run_one(wav_path: str) -> Dict[str, Any]:
 
 
 INDEX_HTML = """<!DOCTYPE html>
-<html lang="zh">
+<html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -163,30 +163,30 @@ INDEX_HTML = """<!DOCTYPE html>
     <img src="/assets/x-square-logo.png" alt="X Square mascot"/>
     <div class="brand-copy">
       <h1>X2 Turn Demo</h1>
-      <div class="sub">实时查看 ASR 文本和每 80ms 一帧的原始 Turn 模型输出。
-      六类状态: idle / noidle / speaking / turn_end / backchannel / uncertain。</div>
+      <div class="sub">View ASR text and raw Turn model output in real time, one frame every 80 ms.
+      Six states: idle / noidle / speaking / turn_end / backchannel / uncertain.</div>
     </div>
   </div>
 
   <div class="card">
     <table class="guide">
-      <tr><th>Turn 状态</th><th>模型输出含义</th></tr>
-      <tr><td><b>idle / noidle</b></td><td>静音或检测到非静音活动</td></tr>
-      <tr><td><b>speaking</b></td><td>用户仍在说话</td></tr>
-      <tr><td><b>turn_end</b></td><td>模型预测当前话轮结束</td></tr>
-      <tr><td><b>backchannel</b></td><td>简短附和或反馈</td></tr>
-      <tr><td><b>uncertain</b></td><td>模型尚不能确定</td></tr>
+      <tr><th>Turn state</th><th>Model output meaning</th></tr>
+      <tr><td><b>idle / noidle</b></td><td>Silence or detected non-silent activity</td></tr>
+      <tr><td><b>speaking</b></td><td>The user is still speaking</td></tr>
+      <tr><td><b>turn_end</b></td><td>The model predicts the current turn has ended</td></tr>
+      <tr><td><b>backchannel</b></td><td>A brief acknowledgment or response</td></tr>
+      <tr><td><b>uncertain</b></td><td>The model cannot determine the state yet</td></tr>
     </table>
   </div>
 
   <div class="card">
     <div class="row">
       <div>
-        <label>预设剧本</label>
+        <label>Preset scenario</label>
         <select id="scenario"></select>
       </div>
       <div>
-        <button id="btn_scene" onclick="runScenario()">运行剧本</button>
+        <button id="btn_scene" onclick="runScenario()">Run Scenario</button>
       </div>
     </div>
     <div class="tip" id="scene_tip"></div>
@@ -197,46 +197,46 @@ INDEX_HTML = """<!DOCTYPE html>
   <div class="card">
     <div class="row">
       <div>
-        <label>或上传自己的 wav</label>
+        <label>Or upload your own WAV file</label>
         <input id="file" type="file" accept="audio/*,.wav"/>
       </div>
       <div>
-        <button class="secondary" id="btn_upload" onclick="runUpload()">分析上传</button>
+        <button class="secondary" id="btn_upload" onclick="runUpload()">Analyze Upload</button>
       </div>
     </div>
   </div>
 
   <div class="card">
-    <div style="font-weight:600;margin-bottom:8px;">麦克风 · Online Streaming</div>
+    <div style="font-weight:600;margin-bottom:8px;">Microphone · Online Streaming</div>
     <div class="tip" style="margin:0 0 12px;">
-      WebSocket 边说边推：每 ~320ms 增量更新 ASR 和六类 Turn 状态。
-      需 Chrome + localhost/https。
+      Stream over WebSocket as you speak, with incremental ASR and six-state Turn updates every ~320 ms.
+      Requires Chrome and localhost or HTTPS.
     </div>
     <div class="row">
       <div>
-        <button id="btn_live" onclick="toggleLive()">开始 Online 流式</button>
+        <button id="btn_live" onclick="toggleLive()">Start Online Streaming</button>
       </div>
       <div>
         <div id="live_time" style="font-family:ui-monospace,monospace;font-size:20px;padding-top:6px;">00:00</div>
       </div>
       <div class="chk" style="padding-top:8px;">
-        <span id="live_state" style="color:#64748b;">未连接</span>
+        <span id="live_state" style="color:#64748b;">Disconnected</span>
       </div>
     </div>
     <div class="tip" id="live_asr" style="margin-top:10px;font-size:15px;color:#0f172a;"></div>
   </div>
 
   <div class="card">
-    <div style="font-weight:600;margin-bottom:8px;">麦克风 · 录完整段再分析（offline）</div>
+    <div style="font-weight:600;margin-bottom:8px;">Microphone · Record First, Then Analyze (Offline)</div>
     <div class="row">
       <div>
-        <button id="btn_mic" class="secondary" onclick="toggleMic()">开始录音</button>
+        <button id="btn_mic" class="secondary" onclick="toggleMic()">Start Recording</button>
       </div>
       <div>
         <div id="mic_time" style="font-family:ui-monospace,monospace;font-size:20px;padding-top:6px;">00:00</div>
       </div>
       <div class="chk" style="padding-top:8px;">
-        <span id="mic_state" style="color:#64748b;">未录音</span>
+        <span id="mic_state" style="color:#64748b;">Not recording</span>
       </div>
     </div>
     <audio id="mic_playback" controls style="width:100%;margin-top:12px;display:none;"></audio>
@@ -264,7 +264,7 @@ async function init() {
   sel.onchange = () => {
     const s = SCENARIOS.find(x => x.key === sel.value);
     document.getElementById('scene_tip').textContent =
-      s ? `${s.tip} · 文本: ${s.text}` : '';
+      s ? `${s.tip} · Text: ${s.text}` : '';
     const audio = document.getElementById('scenario_playback');
     if (s) {
       audio.src = `/api/scenario_audio/${encodeURIComponent(s.key)}`;
@@ -284,7 +284,7 @@ function render(j, extraHtml='') {
     <div class="card"><div style="font-size:13px;color:#64748b;margin-bottom:6px;">
       duration=${j.duration_s?.toFixed?.(2)}s · frames=${j.n_frames} · hist=${JSON.stringify(j.turn_hist||{})}
     </div>${j.timeline_html||''}</div>
-    <div class="card"><div style="font-weight:600;margin-bottom:8px;">帧级文字分析</div>
+    <div class="card"><div style="font-weight:600;margin-bottom:8px;">Frame-Level Text Analysis</div>
       ${j.frames_html||''}</div>
   `;
 }
@@ -299,11 +299,11 @@ async function runScenario() {
   const key = document.getElementById('scenario').value;
   const btn = document.getElementById('btn_scene');
   if (!key) {
-    document.getElementById('status').textContent = '请先选择剧本';
+    document.getElementById('status').textContent = 'Please select a scenario first';
     return;
   }
   btn.disabled = true;
-  document.getElementById('status').textContent = '推理中…（首句可能较慢）';
+  document.getElementById('status').textContent = 'Running inference… (the first request may be slower)';
   try {
     const r = await fetch('/api/run_scenario', {
       method:'POST',
@@ -319,9 +319,9 @@ async function runScenario() {
     const tip = `<div style="margin-bottom:10px;color:#475569;font-size:13px;">
       <b>${j.scenario?.title||''}</b><br>${j.scenario?.tip||''}</div>`;
     render(j, tip);
-    document.getElementById('status').textContent = '完成';
+    document.getElementById('status').textContent = 'Done';
   } catch (e) {
-    document.getElementById('status').textContent = '失败: ' + e.message;
+    document.getElementById('status').textContent = 'Failed: ' + e.message;
   } finally {
     btn.disabled = false;
   }
@@ -330,7 +330,7 @@ async function runScenario() {
 async function postAudioBlob(blob, filename) {
   const fd = new FormData();
   fd.append('file', blob, filename);
-  document.getElementById('status').textContent = '推理中…（说完后分析整段，约几秒）';
+  document.getElementById('status').textContent = 'Running inference… (analyzing the full recording takes a few seconds)';
   const r = await fetch('/api/run_upload', { method:'POST', body: fd });
   let j = {};
   try { j = await r.json(); } catch (_) { j = {}; }
@@ -340,19 +340,19 @@ async function postAudioBlob(blob, filename) {
   }
   if (j.error) throw new Error(j.error);
   render(j);
-  document.getElementById('status').textContent = '完成';
+  document.getElementById('status').textContent = 'Done';
   return j;
 }
 
 async function runUpload() {
   const f = document.getElementById('file').files[0];
-  if (!f) { alert('请先选择 wav'); return; }
+  if (!f) { alert('Please select a WAV file first'); return; }
   const btn = document.getElementById('btn_upload');
   btn.disabled = true;
   try {
     await postAudioBlob(f, f.name || 'upload.wav');
   } catch (e) {
-    document.getElementById('status').textContent = '失败: ' + e.message;
+    document.getElementById('status').textContent = 'Failed: ' + e.message;
   } finally {
     btn.disabled = false;
   }
@@ -401,7 +401,7 @@ function updateMicClock() {
 
 async function startMic() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    alert('当前浏览器不支持麦克风。请用 Chrome，并通过 https 或 localhost 打开。');
+    alert('This browser does not support microphone access. Use Chrome over HTTPS or localhost.');
     return;
   }
   const stream = await navigator.mediaDevices.getUserMedia({
@@ -426,9 +426,9 @@ async function startMic() {
     timer: setInterval(updateMicClock, 250),
     sampleRate: ctx.sampleRate,
   };
-  document.getElementById('btn_mic').textContent = '停止并分析';
+  document.getElementById('btn_mic').textContent = 'Stop and Analyze';
   document.getElementById('btn_mic').style.background = '#dc2626';
-  document.getElementById('mic_state').textContent = '录音中…';
+  document.getElementById('mic_state').textContent = 'Recording…';
   document.getElementById('mic_state').style.color = '#dc2626';
   updateMicClock();
 }
@@ -444,9 +444,9 @@ async function stopMicAndAnalyze() {
   rec.stream.getTracks().forEach(t => t.stop());
   try { await rec.ctx.close(); } catch (_) {}
 
-  document.getElementById('btn_mic').textContent = '开始录音';
+  document.getElementById('btn_mic').textContent = 'Start Recording';
   document.getElementById('btn_mic').style.background = '';
-  document.getElementById('mic_state').textContent = '分析中…';
+  document.getElementById('mic_state').textContent = 'Analyzing…';
   document.getElementById('mic_state').style.color = '#64748b';
   document.getElementById('btn_mic').disabled = true;
 
@@ -457,8 +457,8 @@ async function stopMicAndAnalyze() {
   for (const c of rec.chunks) { merged.set(c, off); off += c.length; }
   const pcm16k = downsample(merged, rec.sampleRate, 16000);
   if (pcm16k.length < 16000 * 0.3) {
-    document.getElementById('status').textContent = '录音太短（至少约 0.3s）';
-    document.getElementById('mic_state').textContent = '未录音';
+    document.getElementById('status').textContent = 'Recording is too short (minimum ~0.3 s)';
+    document.getElementById('mic_state').textContent = 'Not recording';
     document.getElementById('btn_mic').disabled = false;
     return;
   }
@@ -469,10 +469,10 @@ async function stopMicAndAnalyze() {
 
   try {
     await postAudioBlob(blob, 'mic.wav');
-    document.getElementById('mic_state').textContent = '已分析';
+    document.getElementById('mic_state').textContent = 'Analyzed';
   } catch (e) {
-    document.getElementById('status').textContent = '失败: ' + e.message;
-    document.getElementById('mic_state').textContent = '失败';
+    document.getElementById('status').textContent = 'Failed: ' + e.message;
+    document.getElementById('mic_state').textContent = 'Failed';
   } finally {
     document.getElementById('btn_mic').disabled = false;
   }
@@ -485,7 +485,7 @@ async function toggleMic() {
     try {
       await startMic();
     } catch (e) {
-      alert('无法打开麦克风: ' + e.message);
+      alert('Could not access the microphone: ' + e.message);
     }
   }
 }
@@ -508,7 +508,7 @@ function applyStreamUpdate(j) {
 
 async function startLive() {
   if (!navigator.mediaDevices?.getUserMedia) {
-    alert('浏览器不支持麦克风');
+    alert('This browser does not support microphone access');
     return;
   }
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -517,7 +517,7 @@ async function startLive() {
 
   await new Promise((resolve, reject) => {
     ws.onopen = resolve;
-    ws.onerror = () => reject(new Error('WebSocket 连接失败'));
+    ws.onerror = () => reject(new Error('WebSocket connection failed'));
   });
 
   ws.send(JSON.stringify({
@@ -535,7 +535,7 @@ async function startLive() {
   mute.gain.value = 0;
   let sendBuf = [];
   let sendSamples = 0;
-  const target = Math.floor(ctx.sampleRate * 0.08); // ~80ms 发包
+  const target = Math.floor(ctx.sampleRate * 0.08); // Send packets every ~80 ms
 
   processor.onaudioprocess = (e) => {
     if (!live || live.ws.readyState !== WebSocket.OPEN) return;
@@ -575,11 +575,11 @@ async function startLive() {
     try {
       const j = JSON.parse(ev.data);
       if (j.error) {
-        document.getElementById('status').textContent = '错误: ' + j.error;
+        document.getElementById('status').textContent = 'Error: ' + j.error;
         return;
       }
       if (j.type === 'ready') {
-        document.getElementById('live_state').textContent = '流式中…';
+        document.getElementById('live_state').textContent = 'Streaming…';
         document.getElementById('live_state').style.color = '#16a34a';
         return;
       }
@@ -591,14 +591,14 @@ async function startLive() {
     }
   };
   ws.onclose = () => {
-    document.getElementById('live_state').textContent = '已断开';
+    document.getElementById('live_state').textContent = 'Disconnected';
     document.getElementById('live_state').style.color = '#64748b';
   };
 
-  document.getElementById('btn_live').textContent = '停止 Online';
+  document.getElementById('btn_live').textContent = 'Stop Online Streaming';
   document.getElementById('btn_live').style.background = '#dc2626';
-  document.getElementById('live_state').textContent = '连接中…';
-  document.getElementById('status').textContent = 'Online streaming 已开始，请说话…';
+  document.getElementById('live_state').textContent = 'Connecting…';
+  document.getElementById('status').textContent = 'Online streaming has started. Please speak…';
 }
 
 async function stopLive() {
@@ -611,9 +611,9 @@ async function stopLive() {
   try { L.mute.disconnect(); } catch (_) {}
   L.stream.getTracks().forEach(t => t.stop());
   try { await L.ctx.close(); } catch (_) {}
-  document.getElementById('btn_live').textContent = '开始 Online 流式';
+  document.getElementById('btn_live').textContent = 'Start Online Streaming';
   document.getElementById('btn_live').style.background = '';
-  document.getElementById('live_state').textContent = '收尾中…';
+  document.getElementById('live_state').textContent = 'Finalizing…';
   if (L.ws.readyState === WebSocket.OPEN) {
     L.ws.send(JSON.stringify({ type: 'stop' }));
     // wait for final briefly
@@ -633,7 +633,7 @@ async function stopLive() {
     });
     try { L.ws.close(); } catch (_) {}
   }
-  document.getElementById('live_state').textContent = '结束';
+  document.getElementById('live_state').textContent = 'Finished';
 }
 
 async function toggleLive() {
@@ -643,7 +643,7 @@ async function toggleLive() {
     finally { document.getElementById('btn_live').disabled = false; }
   } else {
     try { await startLive(); }
-    catch (e) { alert('Online 启动失败: ' + e.message); }
+    catch (e) { alert('Failed to start online streaming: ' + e.message); }
   }
 }
 

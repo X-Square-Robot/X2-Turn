@@ -1,17 +1,20 @@
-"""Online streaming session: 麦克风/分块 PCM → 增量 ASR + turn 状态。
+"""Online streaming session: microphone/chunked PCM → incremental ASR + turn states.
 
-实现说明
----------
-本模块是本地 Transformers 后端的演示路径，使用:
+Implementation notes
+--------------------
+This module is the demo path for the local Transformers backend. It uses:
 
-  **HF ONLINE processor 分块 ingest + 对累计缓冲做增量解码**
-  （适合观察短句的原始 ASR 与 Turn 状态；与 offline 对齐口径一致）
+  **chunked ingestion with the HF ONLINE processor + incremental decoding of
+  the accumulated buffer**
+  (suitable for observing raw ASR and Turn states for short utterances, with
+  semantics consistent with offline inference)
 
-每 ``commit_ms``（默认 320ms）对当前缓冲跑一次 ``engine.infer_wav``，
-把新的 ASR / turn 状态推给前端。
+Every ``commit_ms`` (320 ms by default), ``engine.infer_wav`` runs on the
+current buffer and pushes new ASR and turn states to the frontend.
 
-生产流式路径请使用带 X2 Turn overlay 的 vLLM ``/v1/realtime``；对应实现位于
-``online_vllm.py``，可以直接接收 6 类 ``turn.delta``。
+For production streaming, use vLLM ``/v1/realtime`` with the X2 Turn overlay.
+The corresponding implementation is in ``online_vllm.py`` and can receive all
+six ``turn.delta`` classes directly.
 """
 
 from __future__ import annotations
@@ -45,7 +48,7 @@ class StreamUpdate:
 
 
 class OnlineTurnSession:
-    """单路会话: push_pcm → (optional) StreamUpdate; finish → final update."""
+    """Single session: push_pcm → optional StreamUpdate; finish → final update."""
 
     def __init__(
         self,
@@ -81,7 +84,7 @@ class OnlineTurnSession:
         self._n_samples += int(pcm.size)
         self._since_commit += int(pcm.size)
 
-        # 滚动窗口, 避免超长句反复全量解码过慢
+        # Use a rolling window to avoid repeatedly decoding long utterances in full.
         if self._n_samples > self.max_buffer_samples:
             wav = self._wav()[-self.max_buffer_samples :]
             self._chunks = [wav]
@@ -94,7 +97,7 @@ class OnlineTurnSession:
         return self._decode(kind="partial")
 
     def finish(self) -> StreamUpdate:
-        # 句尾再补一点静音, 帮助 ASR delay / turn flush
+        # Append silence to help flush delayed ASR and turn output.
         pad_s = max(self.engine.delay_ms / 1000.0, 0.48)
         if self.engine.turn_delay > 0:
             pad_s += self.engine.turn_delay * self.engine.seconds_per_token
@@ -144,7 +147,7 @@ def chunk_wav_for_online(
     sr: int,
     chunk_ms: int = 80,
 ):
-    """把整段 wav 切成 online push 用的小块 (测试/回放)。"""
+    """Split a WAV array into chunks for online pushes (tests/playback)."""
     n = int(sr * chunk_ms / 1000.0)
     wav = np.asarray(wav, dtype=np.float32).reshape(-1)
     for i in range(0, len(wav), n):

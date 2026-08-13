@@ -1,4 +1,4 @@
-"""预设剧本: 优先从已评估 preds 里挑 category_ok 的样本, 保证 demo 可演示。"""
+"""Preset scenarios: prefer evaluated samples marked category_ok for a reliable demo."""
 
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ def _cat_of(wav: str) -> str:
 
 
 def _load_from_preds(preds_jsonl: str, per_cat: int = 8) -> Dict[str, List[dict]]:
-    """只取 category_ok=True 的样本, demo 体验更稳。"""
+    """Use only samples with category_ok=True for a more reliable demo."""
     by_cat: Dict[str, List[dict]] = {
         "complete": [],
         "incomplete": [],
@@ -99,7 +99,7 @@ def load_scenario_pool(
     per_cat: int = 8,
 ) -> Dict[str, List[dict]]:
     pool = _load_from_preds(preds_jsonl, per_cat=per_cat)
-    # 缺类时用 testset 补齐
+    # Fill missing categories from the test set.
     if any(len(v) == 0 for v in pool.values()):
         fallback = _load_from_test(test_jsonl, per_cat=per_cat)
         for cat, xs in fallback.items():
@@ -131,10 +131,10 @@ def build_scenarios(
         return xs[i] if i < len(xs) else None
 
     specs = [
-        ("complete", "完整句的逐帧 Turn 状态"),
-        ("wait", "结束指令的逐帧 Turn 状态"),
-        ("backchannel", "简短附和的逐帧 Turn 状态"),
-        ("incomplete", "未完成语句的逐帧 Turn 状态"),
+        ("complete", "Frame-level Turn states for a complete sentence"),
+        ("wait", "Frame-level Turn states for a wait instruction"),
+        ("backchannel", "Frame-level Turn states for a brief acknowledgment"),
+        ("incomplete", "Frame-level Turn states for an incomplete utterance"),
     ]
     used = {c: 0 for c in ("complete", "wait", "backchannel", "incomplete")}
     for cat, tip in specs:
@@ -142,7 +142,7 @@ def build_scenarios(
         item = pick(cat, i)
         used[cat] = i + 1
         if item is None:
-            # 同类别再往后找
+            # Search later entries in the same category.
             for j in range(i + 1, len(pool.get(cat) or [])):
                 item = pick(cat, j)
                 if item is not None:

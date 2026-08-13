@@ -46,7 +46,7 @@ ER_WHITELIST = (
 )
 ER_WHITELIST_PATTERN = re.compile(ER_WHITELIST)
 
-# 中文数字系统类型
+# Chinese numbering-system types
 NUMBERING_TYPES = ["low", "mid", "high"]
 
 CURRENCY_NAMES = (
@@ -398,10 +398,10 @@ IN_VALID_CHARS = {c: True for c in VALID_CHARS}
 # ================================================================================ #
 class ChineseChar(object):
     """
-    中文字符
-    每个字符对应简体和繁体,
-    e.g. 简体 = '负', 繁体 = '負'
-    转换时可转换为简体或繁体
+    A Chinese character with simplified and traditional forms.
+
+    For example, simplified = '负' and traditional = '負'. Conversion can
+    target either form.
     """
 
     def __init__(self, simplified, traditional):
@@ -418,9 +418,10 @@ class ChineseChar(object):
 
 class ChineseNumberUnit(ChineseChar):
     """
-    中文数字/数位字符
-    每个字符除繁简体外还有一个额外的大写字符
-    e.g. '陆' 和 '陸'
+    A Chinese numeric place-value character.
+
+    In addition to simplified and traditional forms, each character has
+    corresponding financial-numeral forms, e.g. '陆' and '陸'.
     """
 
     def __init__(self, power, simplified, traditional, big_s, big_t):
@@ -477,7 +478,7 @@ class ChineseNumberUnit(ChineseChar):
 
 class ChineseNumberDigit(ChineseChar):
     """
-    中文数字字符
+    A Chinese numeral digit.
     """
 
     def __init__(
@@ -500,7 +501,7 @@ class ChineseNumberDigit(ChineseChar):
 
 class ChineseMath(ChineseChar):
     """
-    中文数位字符
+    A Chinese mathematical character.
     """
 
     def __init__(self, simplified, traditional, symbol, expression=None):
@@ -516,7 +517,7 @@ CC, CNU, CND, CM = ChineseChar, ChineseNumberUnit, ChineseNumberDigit, ChineseMa
 
 class NumberSystem(object):
     """
-    中文数字系统
+    A Chinese numbering system.
     """
 
     pass
@@ -524,7 +525,7 @@ class NumberSystem(object):
 
 class MathSymbol(object):
     """
-    用于中文数字系统的数学符号 (繁/简体), e.g.
+    Mathematical symbols for a Chinese numbering system (simplified/traditional), e.g.
     positive = ['正', '正']
     negative = ['负', '負']
     point = ['点', '點']
@@ -542,7 +543,7 @@ class MathSymbol(object):
 
 # class OtherSymbol(object):
 #     """
-#     其他符号
+#     Other symbols.
 #     """
 #
 #     def __init__(self, sil):
@@ -558,12 +559,15 @@ class MathSymbol(object):
 # ================================================================================ #
 def create_system(numbering_type=NUMBERING_TYPES[1]):
     """
-    根据数字系统类型返回创建相应的数字系统，默认为 mid
-    NUMBERING_TYPES = ['low', 'mid', 'high']: 中文数字系统类型
+    Create a numbering system of the requested type; the default is ``mid``.
+
+    ``NUMBERING_TYPES = ['low', 'mid', 'high']`` defines the available Chinese
+    numbering-system types:
         low:  '兆' = '亿' * '十' = $10^{9}$,  '京' = '兆' * '十', etc.
         mid:  '兆' = '亿' * '万' = $10^{12}$, '京' = '兆' * '万', etc.
         high: '兆' = '亿' * '亿' = $10^{16}$, '京' = '兆' * '兆', etc.
-    返回对应的数字系统
+
+    Return the corresponding numbering system.
     """
 
     # chinese number units of '亿' and larger
@@ -852,7 +856,7 @@ def num2chn(
 # ================================================================================ #
 class Cardinal:
     """
-    CARDINAL类
+    Cardinal-number rewriter.
     """
 
     def __init__(self, cardinal=None, chntext=None):
@@ -868,7 +872,7 @@ class Cardinal:
 
 class Digit:
     """
-    DIGIT类
+    Digit-sequence rewriter.
     """
 
     def __init__(self, digit=None, chntext=None):
@@ -884,7 +888,7 @@ class Digit:
 
 class TelePhone:
     """
-    TELEPHONE类
+    Telephone-number rewriter.
     """
 
     def __init__(self, telephone=None, raw_chntext=None, chntext=None):
@@ -918,7 +922,7 @@ class TelePhone:
 
 class Fraction:
     """
-    FRACTION类
+    Fraction rewriter.
     """
 
     def __init__(self, fraction=None, chntext=None):
@@ -936,7 +940,7 @@ class Fraction:
 
 class Date:
     """
-    DATE类
+    Date rewriter.
     """
 
     def __init__(self, date=None, chntext=None):
@@ -994,7 +998,7 @@ class Date:
 
 class Money:
     """
-    MONEY类
+    Monetary-value rewriter.
     """
 
     def __init__(self, money=None, chntext=None):
@@ -1019,7 +1023,7 @@ class Money:
 
 class Percentage:
     """
-    PERCENTAGE类
+    Percentage rewriter.
     """
 
     def __init__(self, percentage=None, chntext=None):
@@ -1036,7 +1040,7 @@ class Percentage:
 def normalize_nsw(raw_text):
     text = "^" + raw_text + "$"
 
-    # 规范化日期
+    # Normalize dates
     pattern = re.compile(
         r"\D+((([089]\d|(19|20)\d{2})年)?(\d{1,2}月(\d{1,2}[日号])?)?)"
     )
@@ -1046,7 +1050,7 @@ def normalize_nsw(raw_text):
         for matcher in matchers:
             text = text.replace(matcher[0], Date(date=matcher[0]).date2chntext(), 1)
 
-    # 规范化金钱
+    # Normalize monetary values
     pattern = re.compile(
         r"\D+((\d+(\.\d+)?)[多余几]?"
         + CURRENCY_UNITS
@@ -1060,12 +1064,12 @@ def normalize_nsw(raw_text):
         for matcher in matchers:
             text = text.replace(matcher[0], Money(money=matcher[0]).money2chntext(), 1)
 
-    # 规范化固话/手机号码
-    # 手机
+    # Normalize landline and mobile telephone numbers
+    # Mobile numbers
     # http://www.jihaoba.com/news/show/13680
-    # 移动：139、138、137、136、135、134、159、158、157、150、151、152、188、187、182、183、184、178、198
-    # 联通：130、131、132、156、155、186、185、176
-    # 电信：133、153、189、180、181、177
+    # China Mobile: 139, 138, 137, 136, 135, 134, 159, 158, 157, 150, 151, 152, 188, 187, 182, 183, 184, 178, 198
+    # China Unicom: 130, 131, 132, 156, 155, 186, 185, 176
+    # China Telecom: 133, 153, 189, 180, 181, 177
     pattern = re.compile(r"\D((\+?86 ?)?1([38]\d|5[0-35-9]|7[678]|9[89])\d{8})\D")
     matchers = pattern.findall(text)
     if matchers:
@@ -1074,7 +1078,7 @@ def normalize_nsw(raw_text):
             text = text.replace(
                 matcher[0], TelePhone(telephone=matcher[0]).telephone2chntext(), 1
             )
-    # 固话
+    # Landline numbers
     pattern = re.compile(r"\D((0(10|2[1-3]|[3-9]\d{2})-?)?[1-9]\d{6,7})\D")
     matchers = pattern.findall(text)
     if matchers:
@@ -1086,7 +1090,7 @@ def normalize_nsw(raw_text):
                 1,
             )
 
-    # 规范化分数
+    # Normalize fractions
     pattern = re.compile(r"(\d+/\d+)")
     matchers = pattern.findall(text)
     if matchers:
@@ -1096,7 +1100,7 @@ def normalize_nsw(raw_text):
                 matcher, Fraction(fraction=matcher).fraction2chntext(), 1
             )
 
-    # 规范化百分数
+    # Normalize percentages
     text = text.replace("％", "%")
     pattern = re.compile(r"(\d+(\.\d+)?%)")
     matchers = pattern.findall(text)
@@ -1107,7 +1111,7 @@ def normalize_nsw(raw_text):
                 matcher[0], Percentage(percentage=matcher[0]).percentage2chntext(), 1
             )
 
-    # 规范化纯数+量词
+    # Normalize bare numbers followed by quantifiers
     pattern = re.compile(r"(\d+(\.\d+)?)[多余几]?" + COM_QUANTIFIERS)
     matchers = pattern.findall(text)
     if matchers:
@@ -1117,7 +1121,7 @@ def normalize_nsw(raw_text):
                 matcher[0], Cardinal(cardinal=matcher[0]).cardinal2chntext(), 1
             )
 
-    # 规范化数字编号
+    # Normalize numeric identifiers
     pattern = re.compile(r"(\d{4,32})")
     matchers = pattern.findall(text)
     if matchers:
@@ -1125,7 +1129,7 @@ def normalize_nsw(raw_text):
         for matcher in matchers:
             text = text.replace(matcher, Digit(digit=matcher).digit2chntext(), 1)
 
-    # 规范化纯数
+    # Normalize bare numbers
     pattern = re.compile(r"(\d+(\.\d+)?)")
     matchers = pattern.findall(text)
     if matchers:
@@ -1148,8 +1152,9 @@ def normalize_nsw(raw_text):
 
 def remove_erhua(text):
     """
-    去除儿化音词中的儿:
-    他女儿在那边儿 -> 他女儿在那边
+    Remove the ``儿`` suffix from erhua words.
+
+    Example: 他女儿在那边儿 -> 他女儿在那边
     """
 
     new_str = ""

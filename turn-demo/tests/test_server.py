@@ -24,7 +24,7 @@ def test_index_loads_without_private_scenarios():
 
     assert response.status_code == 200
     assert "X2 Turn Demo" in response.text
-    assert "原始 Turn 模型输出" in response.text
+    assert "raw Turn model output" in response.text
     assert "ACCEPT" not in response.text
     assert "barge_in_frames" not in response.text
     assert "vLLM /v1/realtime" not in response.text

@@ -23,7 +23,7 @@ Browser (HTTPS :8443)
 
 Detailed design:
 
-- [`docs/ARCHITECTURE.zh.md`](docs/ARCHITECTURE.zh.md): end-to-end pipeline,
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): end-to-end pipeline,
   generation epochs, streaming TTS, and current limitations.
 - [`docs/STATE_MACHINE.md`](docs/STATE_MACHINE.md): 80 ms turn labels,
   endpoint confirmation, acoustic veto, and backchannel policy.

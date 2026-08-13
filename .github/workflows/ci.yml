@@ -21,8 +21,9 @@ jobs:
           python -m pip install -e "./full-duplex-demo[demo,dev]"
       - name: Validate Miniforge environments
         run: |
-          ruff check scripts/check_environments.py
+          ruff check scripts/check_environments.py scripts/check_release_language.py
           python scripts/check_environments.py
+          python scripts/check_release_language.py
       - name: Validate core
         working-directory: voxtral-realtime
         run: |

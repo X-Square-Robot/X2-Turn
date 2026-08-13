@@ -1,4 +1,4 @@
-"""把逐帧 turn 状态渲染成 HTML 时间轴。"""
+"""Render frame-level turn states as an HTML timeline."""
 
 from __future__ import annotations
 
@@ -63,7 +63,7 @@ def frame_table_html(frames: Iterable[Any]) -> str:
             "</tr>"
         )
     if not rows:
-        rows.append("<tr><td colspan=5>(暂无帧)</td></tr>")
+        rows.append("<tr><td colspan=5>(no frames)</td></tr>")
     return f"""
 <div style="max-height:320px;overflow:auto;font-family:ui-monospace,monospace;font-size:12px;">
 <table style="width:100%;border-collapse:collapse;">

@@ -1,9 +1,9 @@
-# X Square Demo 状态轮转逻辑（基于 Voxtral 80ms Turn 流）
+# X Square Demo State Transition Logic (Based on the Voxtral 80 ms Turn Stream)
 
-模型：`Kaiqfu/X2-Turn-4B-0812`
-帧周期：**80ms / 状态**（`audio_length_per_tok=8`, 16kHz, hop=160 → 8×160/16000 = 0.08s）
+Model: `Kaiqfu/X2-Turn-4B-0812`
+Frame interval: **80 ms per state** (`audio_length_per_tok=8`, 16 kHz, hop=160 → 8×160/16000 = 0.08 s)
 
-当前 demo 栈：
+Current demo stack:
 
 ```
 Browser (:8443)
@@ -16,169 +16,168 @@ Browser (:8443)
 
 ---
 
-## 1. 模型输出是什么粒度？
+## 1. What Is the Granularity of the Model Output?
 
-### 1.1 推理：80ms 一帧、一状态
+### 1.1 Inference: One State per 80 ms Frame
 
-Voxtral MTP turn 头在流式推理时，与 ASR 共用 **80ms 延迟流** 时间轴。  
-vLLM realtime 每个 `turn.delta` 带 `frame_index`，表示**第几个 80ms 帧**的状态，六类之一：
+During streaming inference, the Voxtral MTP turn head shares the ASR timeline, which advances in **80 ms latency-stream frames**.
+Each vLLM Realtime `turn.delta` includes a `frame_index` identifying the corresponding **80 ms frame** and one of six states:
 
-| ID | 类名 | 含义（训练语义） |
-|----|------|------------------|
-| 35 | `idle` | 无有效话轮语义；**帧级填充**，字间/句间/静音 |
-| 36 | `noidle` | 该 80ms 窗内有语音（粗声学） |
-| 37 | `speaking` | 用户正在说、句未结束 |
-| 38 | `turn_end` | 可接话/句末 |
-| 39 | `backchannel` | 附和，不当完整一轮 |
-| 40 | `uncertain` | 训练侧保留的不确定状态；应用层不直接执行动作 |
+| ID | Class | Meaning (training semantics) |
+|----|-------|------------------------------|
+| 35 | `idle` | No meaningful turn-taking signal; **frame-level padding** between characters, between sentences, or during silence |
+| 36 | `noidle` | Speech is present in this 80 ms window (coarse acoustic signal) |
+| 37 | `speaking` | The user is speaking and the utterance is not complete |
+| 38 | `turn_end` | The system may take the turn; end of utterance |
+| 39 | `backchannel` | Acknowledgment that does not constitute a complete turn |
+| 40 | `uncertain` | Uncertain state retained from training; the application layer takes no direct action |
 
-**不是**「一个字一个状态」。ASR 仍按字/词出 `transcription.delta`，但 turn 是 **parallel 80ms 帧序列**。
+This is **not** one state per character. ASR still emits `transcription.delta` events by character or word, while turn states form a **parallel sequence of 80 ms frames**.
 
-### 1.2 训练标签长什么样？
+### 1.2 What Do the Training Labels Look Like?
 
-训练代码不随推理仓库发布；公开的标签契约如下：
+The training code is not distributed with the inference repository. The public label contract is:
 
-1. 先铺一条长度 = 总生成帧数的数组，**默认全是 `idle`**
-2. 再把每个字/词的 turn 类（bc / noidle / speaking / turn_end）**写到 ASR 对齐到的帧区间**
-3. 字与字之间、PAD、尾静音 → 保持 **`idle`**
+1. Create an array whose length equals the total number of generated frames, initialized entirely to **`idle`**.
+2. Write each character's or word's turn class (bc / noidle / speaking / turn_end) into the **frame interval to which ASR aligns it**.
+3. Leave inter-character gaps, PAD frames, and trailing silence as **`idle`**.
 
-因此真实 gold 时间线类似（示意）：
+As a result, an actual gold timeline looks like this (illustrative):
 
 ```
-帧:  idle idle idle | bc | idle | noidle | idle | speaking speaking | turn_end | idle idle
-      ─── 静音 ───   附和  间隔   有声      间隔    在说            句末       尾静音
+Frame: idle idle idle | bc  | idle | noidle | idle | speaking speaking | turn_end    | idle idle
+       ─── silence ──   ack.   gap    speech    gap    speaking          utterance end  trailing silence
 ```
 
-要点：
+Key points:
 
-- **`idle` 会插在 bc / noidle / speaking / turn_end 中间**，这是正常标签，不是噪声
-- 不能用「连续 4 帧无 idle」这种规则——中间一旦出现 idle 就会断计数
-- 决策单位应是 **80ms 帧序列 + 逐帧状态机**，不是「最后一个非 idle 字」
+- **`idle` may appear between bc / noidle / speaking / turn_end labels**. This is expected labeling behavior, not noise.
+- A rule such as "four consecutive non-idle frames" is invalid because any intervening `idle` frame resets the count.
+- Decisions must operate on the **80 ms frame sequence with a frame-by-frame state machine**, not on the "last non-idle character."
 
 ---
 
-## 2. 已实现：帧级控制器
+## 2. Implemented: Frame-Level Controller
 
-实现文件：
+Implementation files:
 
-| 文件 | 作用 |
-|------|------|
-| `voxtral_realtime.turn.controller` | N/K 状态机 |
-| `voxtral_realtime.server` | WebSocket bridge，逐帧调用控制器 |
-| `voxtral_realtime.realtime` | `consume_turn_frames()` 按帧 drain |
-| `dialogue_system/clients/vad_client.py` | 每包 audio 附带 `bot_speaking` |
-| `dialogue_system/app.py` | TTS 首包设 `bot_speaking=True`，interrupt 清 False |
+| File | Purpose |
+|------|---------|
+| `voxtral_realtime.turn.controller` | N/K state machine |
+| `voxtral_realtime.server` | WebSocket bridge that invokes the controller frame by frame |
+| `voxtral_realtime.realtime` | `consume_turn_frames()` drains frames individually |
+| `dialogue_system/clients/vad_client.py` | Attaches `bot_speaking` to each audio packet |
+| `dialogue_system/app.py` | Sets `bot_speaking=True` on the first TTS packet and clears it on interruption |
 
-### 2.1 默认参数
+### 2.1 Default Parameters
 
-| 参数 | 默认 | 含义 |
-|------|------|------|
-| `N` (`end_confirm_frames`) | 1 | `turn_end` 后再等 N 帧（×80ms）无恢复说话 → ACCEPT |
-| `K` (`silence_end_frames`) | 3 | 已有语义说话后，K 帧非 SPEECH → 软 endpoint |
-| `commit_ms` | 80 | Bot 不在播时的轮询/门控节奏 |
-| `barge_commit_ms` | 80 | **Bot 在播时**切到 80ms 节奏 + 跳过 lead-in gate |
-| `min_asr_chars` | 1 | ACCEPT 前 ASR 至少几个字符 |
+| Parameter | Default | Meaning |
+|-----------|---------|---------|
+| `N` (`end_confirm_frames`) | 1 | After `turn_end`, wait N additional frames (×80 ms) without resumed speech, then ACCEPT |
+| `K` (`silence_end_frames`) | 3 | After semantic speech has begun, K non-SPEECH frames trigger a soft endpoint |
+| `commit_ms` | 80 | Polling/gating interval while the bot is not speaking |
+| `barge_commit_ms` | 80 | Switches to an 80 ms interval and skips the lead-in gate **while the bot is speaking** |
+| `min_asr_chars` | 1 | Minimum number of ASR characters required before ACCEPT |
 
-配置通过 `voxtral-realtime` 环境变量提供，例如
-`VOXTRAL_BARGE_COMMIT_MS`。
+Configuration is provided through `voxtral-realtime` environment variables, for example
+`VOXTRAL_BARGE_COMMIT_MS`.
 
-### 2.2 规则（逐 80ms 帧）
+### 2.2 Rules (Applied to Each 80 ms Frame)
 
 ```python
 SPEECH = {noidle, speaking}
-BARGE_IMMEDIATE = {speaking, turn_end}   # Bot 在播时
+BARGE_IMMEDIATE = {speaking, turn_end}   # While the bot is speaking
 ```
 
-**① Bot 在播 TTS（`bot_speaking=True`）**
+**① TTS is playing (`bot_speaking=True`)**
 
-- 切换到 `barge_commit_ms=80`，**跳过 lead-in 能量门控**，用户音频立刻进 vLLM
-- bridge 会保留 `speaking` / `turn_end` 的语义 barge 信息；Demo 应用只在
-  PCM 已经播放且持续判断为 `speaking` 时停止音频，以降低扬声器回声误打断
-- `noidle` 不单独触发打断
-- 仍是 **turn 模型决策**，不是前端 RMS 阈值
+- Switch to `barge_commit_ms=80`, **skip lead-in energy gating**, and send user audio to vLLM immediately.
+- The bridge preserves semantic barge-in information from `speaking` / `turn_end`. To reduce false interruptions caused by speaker echo, the demo application stops audio only after PCM playback has begun and the state has remained `speaking`.
+- `noidle` alone does not trigger an interruption.
+- The decision still comes from the **turn model**, not a frontend RMS threshold.
 
-**② 附和拒识**
+**② Backchannel rejection**
 
-- `backchannel` 且尚未出现语义说话（`speaking`/`turn_end`）→ `idle` + `event=reject`
+- `backchannel` before any semantic speech (`speaking`/`turn_end`) → `idle` + `event=reject`
 
-**③ 硬 endpoint（模型打出 turn_end）**
+**③ Hard endpoint (the model emits `turn_end`)**
 
-- 收到 `turn_end` → 进入 pending，计数 **N 帧**
-- pending 期间若出现 `noidle`/`speaking` → 取消 pending，继续听
-- N 帧倒计时结束且 ASR 非空 → **`speak` / ACCEPT**（`reason=turn_end_confirmed`）
+- On `turn_end`, enter the pending state and count **N frames**.
+- If `noidle`/`speaking` occurs while pending, cancel the pending state and continue listening.
+- When the N-frame countdown expires and ASR is nonempty → **`speak` / ACCEPT** (`reason=turn_end_confirmed`)
 
-**④ 软 endpoint（补 turn_end 缺失）**
+**④ Soft endpoint (fallback when `turn_end` is missing)**
 
-- 已进入语义说话段后，连续 **K 帧** 非 SPEECH（`idle` / `backchannel`）
-- ASR 非空 → **`speak` / ACCEPT**（`reason=silence_end`）
+- After entering a semantic speech segment, observe **K consecutive** non-SPEECH frames (`idle` / `backchannel`).
+- If ASR is nonempty → **`speak` / ACCEPT** (`reason=silence_end`)
 
-**⑤ 其它 SPEECH**
+**⑤ Other SPEECH states**
 
-- `speaking` / `noidle` → `nonidle`（HOLD，流式 ASR）
+- `speaking` / `noidle` → `nonidle` (HOLD with streaming ASR)
 
-### 2.3 映射到 X Square 三态
+### 2.3 Mapping to the Three X Square States
 
-| 控制器输出 | X Square `state` | App 行为 |
-|------------|---------------|----------|
-| idle / reject | `idle` | 无动作 |
-| nonidle / barge | `nonidle` | `interrupt()` + 流式 ASR |
+| Controller output | X Square `state` | Application behavior |
+|-------------------|------------------|----------------------|
+| idle / reject | `idle` | No action |
+| nonidle / barge | `nonidle` | `interrupt()` + streaming ASR |
 | speak / accept | `speak` + text | `pipeline_worker` → LLM→TTS |
 
-### 2.4 示例时间线
+### 2.4 Example Timeline
 
 ```
-帧:     idle idle | bc | idle | noidle | speaking … | turn_end | idle
+Frame:     idle idle | bc | idle | noidle | speaking … | turn_end | idle
 X Square:  idle idle | idle(reject) | idle | nonidle | nonidle … | nonidle(pending) | speak
-                                              ↑                         ↑ N=1 帧后 ACCEPT
+                                              ↑                         ↑ ACCEPT after N=1 frame
 ```
 
-若模型未出 `turn_end`：
+If the model does not emit `turn_end`:
 
 ```
-帧:     … speaking speaking | idle idle idle …
+Frame:     … speaking speaking | idle idle idle …
 X Square:  … nonidle …         | silence_run 1..3 → speak (silence_end)
 ```
 
 ---
 
-## 3. App 层（L3）
+## 3. Application Layer (L3)
 
-`dialogue_system/app.py` 逻辑：
+Logic in `dialogue_system/app.py`:
 
-| Bridge | App |
-|--------|-----|
-| `nonidle` | `interrupt()` + 流式 ASR 展示 |
+| Bridge | Application |
+|--------|-------------|
+| `nonidle` | `interrupt()` + streaming ASR display |
 | `speak` | `pipeline_worker(text)` |
-| `idle` | 无动作 |
+| `idle` | No action |
 
-**`bot_speaking` 同步：**
+**Synchronizing `bot_speaking`:**
 
-1. TTS 首包 `audio_chunk` 发出时：`session.bot_speaking = True`，`vad.set_bot_speaking(True)`
-2. 用户抢话 / `interrupt()`：`bot_speaking = False`
-3. 每个 mic chunk：`vad.process(chunk, bot_speaking=session.bot_speaking)`
+1. When the first TTS `audio_chunk` is sent: `session.bot_speaking = True`, `vad.set_bot_speaking(True)`
+2. On user barge-in / `interrupt()`: `bot_speaking = False`
+3. For every microphone chunk: `vad.process(chunk, bot_speaking=session.bot_speaking)`
 
-Bridge 也可收 `type=control` + `bot_speaking`（备用）。
+The bridge can also receive `type=control` + `bot_speaking` as a fallback.
 
 ---
 
-## 4. 源码索引
+## 4. Source Code Index
 
-| 文件 | 内容 |
-|------|------|
-| `voxtral_realtime.realtime` | vLLM 流式 session + `consume_turn_frames()` |
-| `voxtral_realtime.turn.controller` | **Live 帧状态机** |
+| File | Contents |
+|------|----------|
+| `voxtral_realtime.realtime` | vLLM streaming session + `consume_turn_frames()` |
+| `voxtral_realtime.turn.controller` | **Live frame state machine** |
 | `voxtral_realtime.server` | X Square WebSocket bridge |
-| `dialogue_system/app.py` | L3 抢话 / LLM 管线 / bot_speaking |
+| `dialogue_system/app.py` | L3 barge-in / LLM pipeline / bot_speaking |
 
 ---
 
-## 5. 部署备注
+## 5. Deployment Notes
 
-- VAD 模型：`Kaiqfu/X2-Turn-4B-0812`
-- TTS：CosyVoice2 `:6017`（`TTS_API_URL`）
-- UI：`https://localhost:8443`
+- VAD model: `Kaiqfu/X2-Turn-4B-0812`
+- TTS: CosyVoice2 `:6017` (`TTS_API_URL`)
+- UI: `https://localhost:8443`
 
-启动 bridge 示例：
+Example bridge startup command:
 
 ```bash
 VOXTRAL_END_CONFIRM_FRAMES=1 \
