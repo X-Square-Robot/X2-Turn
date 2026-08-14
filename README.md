@@ -1,3 +1,9 @@
+
+
+https://github.com/user-attachments/assets/9722dc23-9355-49a7-9f57-6790ba0db71c
+
+
+
 <div align="center">
   <h1>
     <img
@@ -47,17 +53,23 @@ Dialogue Demo when validating a complete conversational stack.
 
 ### Turn Demo video
 
+
+https://github.com/user-attachments/assets/b64d9c74-7961-42cc-b7d0-392e0fba516e
+
+
 The video shows live ASR, the six-class Turn timeline, and frame-level
 predictions without an LLM or TTS service.
 
-[Watch the Turn Demo video](turn_demo_web.mp4)
+[Watch the Turn Demo video]((https://github.com/user-attachments/assets/216d00ee-b7bd-4964-b65c-8d0d16340591
+)
 
 ### Full-Duplex Dialogue Demo video
 
 The video shows streaming ASR, turn-state tracking, response generation,
 speech playback, and user interruption in one session.
 
-[Watch the Full-Duplex Dialogue Demo video](dialogue_demo_web.mp4)
+[Watch the Full-Duplex Dialogue Demo video](https://github.com/user-attachments/assets/b64d9c74-7961-42cc-b7d0-392e0fba516e
+))
 
 ## Quick start: one audio file
 
