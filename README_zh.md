@@ -63,17 +63,16 @@ Turn State Prediction](https://arxiv.org/abs/2608.10878)**
 
 ### Turn Demo 视频
 
-点击预览图即可观看不依赖 LLM 或 TTS 的实时 ASR、六分类 Turn 时间轴及
-帧级预测结果。
+视频展示了不依赖 LLM 或 TTS 的实时 ASR、六分类 Turn 时间轴及帧级预测结果。
 
-[![观看 Turn Demo](turn_demo_preview.jpg)](turn_demo_web.mp4)
+[观看 Turn Demo 视频](turn_demo_web.mp4)
 
 ### 全双工对话 Demo 视频
 
-点击预览图即可观看一次完整会话中的流式 ASR、话轮状态跟踪、回复生成、
-语音播放及用户打断效果。
+视频展示了一次完整会话中的流式 ASR、话轮状态跟踪、回复生成、语音播放及
+用户打断效果。
 
-[![观看全双工对话 Demo](dialogue_demo_preview.jpg)](dialogue_demo_web.mp4)
+[观看全双工对话 Demo 视频](dialogue_demo_web.mp4)
 
 ## 快速开始：推理一条音频
 
