@@ -23,13 +23,12 @@ from typing import List, Optional, Set
 import numpy as np
 import websockets
 
-from demo_turn.engine import UtterancePred
 from demo_turn.engine_vllm import (
     DEFAULT_SECONDS_PER_TOKEN,
     DEFAULT_VLLM_URL,
     frames_to_utterance,
 )
-from demo_turn.online import StreamUpdate
+from demo_turn.predictions import StreamUpdate, UtterancePred
 from demo_turn.viz import frame_table_html, timeline_html
 
 # Turns that mean "user has started speaking" for text gating.

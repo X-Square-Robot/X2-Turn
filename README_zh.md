@@ -61,6 +61,20 @@ Turn State Prediction](https://arxiv.org/abs/2608.10878)**
 如果需要评估模型本身，请先使用 Turn Demo；如果需要验证完整对话系统，
 请使用全双工对话 Demo。
 
+### Turn Demo 视频
+
+点击预览图即可观看不依赖 LLM 或 TTS 的实时 ASR、六分类 Turn 时间轴及
+帧级预测结果。
+
+[![观看 Turn Demo](turn_demo_preview.jpg)](turn_demo_web.mp4)
+
+### 全双工对话 Demo 视频
+
+点击预览图即可观看一次完整会话中的流式 ASR、话轮状态跟踪、回复生成、
+语音播放及用户打断效果。
+
+[![观看全双工对话 Demo](dialogue_demo_preview.jpg)](dialogue_demo_web.mp4)
+
 ## 快速开始：推理一条音频
 
 推荐在仓库根目录使用 Miniforge 环境：

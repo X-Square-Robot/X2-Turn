@@ -45,6 +45,20 @@ This repository includes two complementary browser demos:
 Start with the Turn Demo when evaluating the model itself. Use the Full-Duplex
 Dialogue Demo when validating a complete conversational stack.
 
+### Turn Demo video
+
+Click the preview to watch live ASR, the six-class Turn timeline, and
+frame-level predictions without an LLM or TTS service.
+
+[![Watch the Turn Demo](turn_demo_preview.jpg)](turn_demo_web.mp4)
+
+### Full-Duplex Dialogue Demo video
+
+Click the preview to watch streaming ASR, turn-state tracking, response
+generation, speech playback, and user interruption in one session.
+
+[![Watch the Full-Duplex Dialogue Demo](dialogue_demo_preview.jpg)](dialogue_demo_web.mp4)
+
 ## Quick start: one audio file
 
 Recommended Miniforge setup, run from the repository root:

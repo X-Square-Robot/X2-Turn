@@ -21,30 +21,13 @@ from __future__ import annotations
 
 import threading
 import time
-from dataclasses import asdict, dataclass
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 import numpy as np
 
 from demo_turn.engine import TurnDemoEngine, UtterancePred
+from demo_turn.predictions import StreamUpdate
 from demo_turn.viz import frame_table_html, timeline_html
-
-
-@dataclass
-class StreamUpdate:
-    kind: str  # partial | final
-    asr_text: str
-    last_turn: str
-    duration_s: float
-    n_frames: int
-    turn_hist: Dict[str, int]
-    timeline_html: str
-    frames_html: str
-    turns: List[str]
-    elapsed_infer_ms: float
-
-    def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
 
 
 class OnlineTurnSession:

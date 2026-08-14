@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 import numpy as np
 import torch
 from mistral_common.tokens.tokenizers.audio import Audio
 from transformers import AutoProcessor
 
+from demo_turn.predictions import FramePred, UtterancePred, load_audio
 from voxtral_realtime.transformers import (
     TURN_CLASS_IDS,
     infer_asr_turn,
@@ -17,34 +16,6 @@ from voxtral_realtime.transformers import (
 
 STREAMING_PAD_ID = 32
 STREAMING_WORD_ID = 33
-
-
-@dataclass
-class FramePred:
-    frame: int
-    t0: float
-    t1: float
-    asr: str
-    turn: str
-    turn_prob: float
-    probs: dict[str, float]
-
-
-@dataclass
-class UtterancePred:
-    wav_path: str
-    asr_text: str
-    seconds_per_token: float
-    delay_ms: int
-    turn_label_delay_frames: int
-    frames: list[FramePred]
-    duration_s: float
-
-
-def load_audio(path: str, sample_rate: int = 16000) -> np.ndarray:
-    audio = Audio.from_file(path, strict=False)
-    audio.resample(sample_rate)
-    return np.asarray(audio.audio_array, dtype=np.float32)
 
 
 def _token_kind(token_id: int, tokenizer) -> str:

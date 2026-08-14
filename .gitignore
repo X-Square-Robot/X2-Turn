@@ -9,3 +9,8 @@ voxtral-mtp-turn/
 **/*.egg-info/
 full-duplex-demo/logs/
 full-duplex-demo/certs/
+turn-demo/logs/
+
+# Raw demo recordings; publish optimized web assets instead.
+/dialogue_demo.mp4
+/turn_demo.mp4

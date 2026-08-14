@@ -38,13 +38,11 @@ _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-from demo_turn.engine import TurnDemoEngine
 from demo_turn.engine_vllm import (
     DEFAULT_VLLM_URL,
     TurnDemoVLLMEngine,
     resolve_vllm_model,
 )
-from demo_turn.online import OnlineTurnSession
 from demo_turn.online_vllm import OnlineVLLMSession
 from demo_turn.scenarios import build_scenarios
 from demo_turn.viz import frame_table_html, timeline_html
@@ -80,6 +78,8 @@ def get_engine():
                 turn_label_delay_frames=ARGS.turn_label_delay_frames,
             )
         else:
+            from demo_turn.engine import TurnDemoEngine
+
             ENGINE = TurnDemoEngine(
                 model_dir=ARGS.model,
                 device=ARGS.device,
@@ -508,97 +508,130 @@ function applyStreamUpdate(j) {
 
 async function startLive() {
   if (!navigator.mediaDevices?.getUserMedia) {
-    alert('This browser does not support microphone access');
-    return;
+    throw new Error('This browser does not support microphone access');
   }
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  const ws = new WebSocket(`${proto}://${location.host}/ws/stream`);
-  ws.binaryType = 'arraybuffer';
+  let ws = null;
+  let stream = null;
+  let ctx = null;
+  try {
+    document.getElementById('live_state').textContent = 'Requesting microphone…';
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true }
+    });
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    await ctx.resume();
 
-  await new Promise((resolve, reject) => {
-    ws.onopen = resolve;
-    ws.onerror = () => reject(new Error('WebSocket connection failed'));
-  });
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    ws = new WebSocket(`${proto}://${location.host}/ws/stream`);
+    ws.binaryType = 'arraybuffer';
+    document.getElementById('live_state').textContent = 'Connecting…';
 
-  ws.send(JSON.stringify({
-    type: 'start',
-    commit_ms: 320,
-  }));
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(
+        () => reject(new Error('WebSocket connection timed out')),
+        10000,
+      );
+      ws.onopen = () => {
+        clearTimeout(timer);
+        resolve();
+      };
+      ws.onerror = () => {
+        clearTimeout(timer);
+        reject(new Error('WebSocket connection failed'));
+      };
+    });
 
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true }
-  });
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const src = ctx.createMediaStreamSource(stream);
-  const processor = ctx.createScriptProcessor(4096, 1, 1);
-  const mute = ctx.createGain();
-  mute.gain.value = 0;
-  let sendBuf = [];
-  let sendSamples = 0;
-  const target = Math.floor(ctx.sampleRate * 0.08); // Send packets every ~80 ms
+    const ready = new Promise((resolve, reject) => {
+      const timer = setTimeout(
+        () => reject(new Error('Inference backend did not become ready')),
+        10000,
+      );
+      ws.onmessage = (ev) => {
+        try {
+          const j = JSON.parse(ev.data);
+          if (j.error) {
+            document.getElementById('status').textContent = 'Error: ' + j.error;
+            return;
+          }
+          if (j.type === 'ready') {
+            clearTimeout(timer);
+            resolve();
+            return;
+          }
+          if (j.type === 'update' || j.kind === 'partial' || j.kind === 'final') {
+            applyStreamUpdate(j);
+          }
+        } catch (e) {
+          console.warn(e);
+        }
+      };
+    });
+    ws.send(JSON.stringify({ type: 'start', commit_ms: 320 }));
+    await ready;
 
-  processor.onaudioprocess = (e) => {
-    if (!live || live.ws.readyState !== WebSocket.OPEN) return;
-    const input = e.inputBuffer.getChannelData(0);
-    sendBuf.push(new Float32Array(input));
-    sendSamples += input.length;
-    if (sendSamples >= target) {
-      let total = 0;
-      for (const c of sendBuf) total += c.length;
-      const merged = new Float32Array(total);
-      let off = 0;
-      for (const c of sendBuf) { merged.set(c, off); off += c.length; }
-      sendBuf = [];
-      sendSamples = 0;
-      const pcm16k = downsample(merged, ctx.sampleRate, 16000);
-      // int16 LE binary
-      const i16 = new Int16Array(pcm16k.length);
-      for (let i = 0; i < pcm16k.length; i++) {
-        const s = Math.max(-1, Math.min(1, pcm16k[i]));
-        i16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+    const src = ctx.createMediaStreamSource(stream);
+    const processor = ctx.createScriptProcessor(4096, 1, 1);
+    const mute = ctx.createGain();
+    mute.gain.value = 0;
+    let sendBuf = [];
+    let sendSamples = 0;
+    const target = Math.floor(ctx.sampleRate * 0.08);
+
+    processor.onaudioprocess = (e) => {
+      if (!live || live.ws.readyState !== WebSocket.OPEN) return;
+      const input = e.inputBuffer.getChannelData(0);
+      sendBuf.push(new Float32Array(input));
+      sendSamples += input.length;
+      if (sendSamples >= target) {
+        let total = 0;
+        for (const c of sendBuf) total += c.length;
+        const merged = new Float32Array(total);
+        let off = 0;
+        for (const c of sendBuf) { merged.set(c, off); off += c.length; }
+        sendBuf = [];
+        sendSamples = 0;
+        const pcm16k = downsample(merged, ctx.sampleRate, 16000);
+        const i16 = new Int16Array(pcm16k.length);
+        for (let i = 0; i < pcm16k.length; i++) {
+          const s = Math.max(-1, Math.min(1, pcm16k[i]));
+          i16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+        }
+        live.ws.send(i16.buffer);
       }
-      live.ws.send(i16.buffer);
+    };
+
+    live = {
+      ws, ctx, processor, stream, src, mute,
+      startedAt: Date.now(),
+      timer: setInterval(liveClock, 250),
+    };
+    ws.onclose = () => {
+      document.getElementById('live_state').textContent = 'Disconnected';
+      document.getElementById('live_state').style.color = '#64748b';
+    };
+    src.connect(processor);
+    processor.connect(mute);
+    mute.connect(ctx.destination);
+    liveClock();
+
+    document.getElementById('btn_live').textContent = 'Stop Online Streaming';
+    document.getElementById('btn_live').style.background = '#dc2626';
+    document.getElementById('live_state').textContent = 'Streaming…';
+    document.getElementById('live_state').style.color = '#16a34a';
+    document.getElementById('status').textContent =
+      'Online streaming has started. Please speak…';
+  } catch (e) {
+    if (ws) {
+      try { ws.close(); } catch (_) {}
     }
-  };
-  src.connect(processor);
-  processor.connect(mute);
-  mute.connect(ctx.destination);
-
-  live = {
-    ws, ctx, processor, stream, src, mute,
-    startedAt: Date.now(),
-    timer: setInterval(liveClock, 250),
-  };
-  liveClock();
-
-  ws.onmessage = (ev) => {
-    try {
-      const j = JSON.parse(ev.data);
-      if (j.error) {
-        document.getElementById('status').textContent = 'Error: ' + j.error;
-        return;
-      }
-      if (j.type === 'ready') {
-        document.getElementById('live_state').textContent = 'Streaming…';
-        document.getElementById('live_state').style.color = '#16a34a';
-        return;
-      }
-      if (j.type === 'update' || j.kind === 'partial' || j.kind === 'final') {
-        applyStreamUpdate(j);
-      }
-    } catch (e) {
-      console.warn(e);
+    if (stream) stream.getTracks().forEach((track) => track.stop());
+    if (ctx) {
+      try { await ctx.close(); } catch (_) {}
     }
-  };
-  ws.onclose = () => {
-    document.getElementById('live_state').textContent = 'Disconnected';
-    document.getElementById('live_state').style.color = '#64748b';
-  };
-
-  document.getElementById('btn_live').textContent = 'Stop Online Streaming';
-  document.getElementById('btn_live').style.background = '#dc2626';
-  document.getElementById('live_state').textContent = 'Connecting…';
-  document.getElementById('status').textContent = 'Online streaming has started. Please speak…';
+    document.getElementById('live_state').textContent = 'Failed';
+    document.getElementById('live_state').style.color = '#dc2626';
+    throw e;
+  }
 }
 
 async function stopLive() {
@@ -795,6 +828,8 @@ def create_app() -> FastAPI:
                             )
                             await session.connect()
                         else:
+                            from demo_turn.online import OnlineTurnSession
+
                             session = OnlineTurnSession(
                                 get_engine(),
                                 commit_ms=commit_ms,

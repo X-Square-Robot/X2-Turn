@@ -15,8 +15,13 @@ from typing import Dict, List, Optional, Sequence, Set
 
 import numpy as np
 
-from demo_turn.engine import FramePred, UtterancePred, load_audio
-from voxtral_realtime.transformers import TURN_CLASS_IDS, TURN_CLASS_NAMES
+from demo_turn.predictions import (
+    TURN_CLASS_IDS,
+    TURN_CLASS_NAMES,
+    FramePred,
+    UtterancePred,
+    load_audio,
+)
 
 TURN_ID_TO_CLASS = dict(zip(TURN_CLASS_IDS, TURN_CLASS_NAMES, strict=True))
 
