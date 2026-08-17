@@ -1,5 +1,6 @@
 # Local model artifacts are distributed through the Model Hub.
 voxtral-mtp-turn/
+/models/
 
 # Local runtime artifacts.
 **/__pycache__/

@@ -1,5 +1,9 @@
 # X2 Turn Demo
 
+New users should follow the root
+[Quick start](../README.md#quick-start). This page is the extra detail
+behind that path.
+
 A standalone browser demo for inspecting X2 Turn without starting an LLM or
 TTS service. Upload or record speech to see:
 
@@ -39,15 +43,17 @@ MODEL=Kaiqfu/X2-Turn-4B-0812 bash run.sh
 MODEL=/path/to/X2-Turn-4B-0812 bash run.sh
 ```
 
-Open <http://localhost:7860>. The model loads on first startup. Set
-`DEVICE=cpu` only for small tests; the 4B checkpoint is intended for a
-CUDA-capable machine.
+Open <http://localhost:7860>. The 4B checkpoint needs a GPU with about
+**24 GB+ VRAM**. The model loads on the first **Run scenario**, upload, or
+microphone request—not when the server process starts. That first inference
+can take several minutes. Set `DEVICE=cpu` only for small tests.
 
 Select **[built-in] English question** and click **Run scenario** to test the
 model without recording or uploading audio. The browser player below the preset
 selector lets you hear the exact input before or after inference. The bundled
 16 kHz mono sample is synthetic; its text, provenance, license, and regeneration
-command are in [`assets/README.md`](assets/README.md).
+command are in [`assets/README.md`](assets/README.md). A typical result for
+that clip is in the root [Quick start](../README.md#quick-start).
 
 The server binds to `127.0.0.1` by default and has no authentication. For
 development TLS, provide a certificate and key:

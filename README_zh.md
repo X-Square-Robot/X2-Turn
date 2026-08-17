@@ -23,100 +23,109 @@
 
 ## 项目简介
 
-X2 Turn 在 Voxtral Realtime 基础上提供两个同步输出：流式自动语音识别，
-以及每 80 毫秒一次的话轮状态预测。
+X2 Turn 会转写语音，并每隔 80 毫秒预测一个话轮状态：`idle`、`noidle`、
+`speaking`、`turn_end`、`backchannel` 或 `uncertain`。
 
-话轮预测头输出 `idle`、`noidle`、`speaking`、`turn_end`、
-`backchannel` 或 `uncertain`。应用侧应对帧级结果进行平滑处理，
-不要将单帧预测直接视为不可撤销的动作。
-
-## Demo
-
-仓库提供两个定位互补的浏览器 Demo：
-
-- **[Turn Demo](turn-demo/README.md)**：展示流式 ASR、原始六分类 Turn 时间轴、
-  每帧概率及对齐后的 ASR token。它不依赖 LLM 或 TTS，是观察模型行为最快的入口。
-- **[全双工对话 Demo](full-duplex-demo/README.md)**：将 X2 Turn 与可选的 LLM、
-  TTS 服务组合起来，展示低延迟接话、附和以及语音播放期间的用户打断。
-
-评估模型本身请先用 Turn Demo；验证完整对话系统请用全双工 Demo。
-
-### Turn Demo 视频
-
-视频展示了不依赖 LLM 或 TTS 的实时 ASR、六分类 Turn 时间轴及帧级预测结果。
+最快的试用方式是浏览器里的 **Turn Demo**。这条路径需要一块 GPU 和 4B
+权重，**不需要** LLM、TTS 或 vLLM。
 
 https://github.com/user-attachments/assets/4040eb7a-4f5b-4e25-8ff4-893caeeb0702
 
-### 全双工对话 Demo 视频
+## 快速开始
 
-视频展示了一次完整会话中的流式 ASR、话轮状态跟踪、回复生成、语音播放及
-用户打断效果。
+只走下面这一条路。等 Demo 跑出文末的期望结果后，再看 vLLM、全双工栈和
+Python API。
 
-https://github.com/user-attachments/assets/4d322e97-b1ce-4e2e-ac35-d8089d965565
+**你需要**
 
-## 最小可行路径：Turn Demo（约 5 分钟）
+- Linux，一块 NVIDIA GPU，**显存至少 24 GB**
+- Miniforge 或 Conda，以及 Git
+- 能访问 [Hugging Face](https://huggingface.co/Kaiqfu/X2-Turn-4B-0812)
+  的网络
 
-如果只想检查 ASR + Turn 状态，可以跳过全双工对话栈。
-这条路径**不需要** CosyVoice、LLM，也不需要打补丁的 vLLM。
+**第一次会很慢。** 创建环境、下载 4B 权重、以及第一次点击 **Run scenario**
+各自都可能要几分钟。网页可能在模型还没装上 GPU 时就已经打开，这是正常的。
 
-**环境要求：** Python 3.10+、可运行 4B 模型的 CUDA GPU，以及下载
-`Kaiqfu/X2-Turn-4B-0812` 的网络访问。
+### 1. 创建环境
 
 ```bash
-# 在 X2-Turn 仓库根目录执行
+git clone -b release/public_v4 https://github.com/cageyoko/X2-Turn.git
+cd X2-Turn
+
 conda env create -f environments/environment-transformers.yml
 conda activate x2-turn
+```
 
+这些包**没有**发布到 PyPI。环境文件会从当前仓库做可编辑安装。
+
+如果已经有带 CUDA 的 PyTorch 环境，也可以只用 pip：
+
+```bash
+python -m pip install -e "./voxtral-realtime[transformers]"
+python -m pip install -e "./turn-demo"
+```
+
+### 2. 下载模型
+
+Demo 会在首次推理时拉取 `Kaiqfu/X2-Turn-4B-0812`。如果 Hugging Face
+卡住、超时，或访问不了 Hub，就先把权重下载到本地：
+
+```bash
+# 在 X2-Turn 仓库根目录，并已 conda activate x2-turn
+huggingface-cli download Kaiqfu/X2-Turn-4B-0812 \
+  --local-dir ./models/X2-Turn-4B-0812
+```
+
+下一步把 `MODEL` 指到这个目录。
+
+### 3. 启动 Demo
+
+```bash
 cd turn-demo
 MODEL=Kaiqfu/X2-Turn-4B-0812 bash run.sh
 ```
 
-打开 <http://localhost:7860>，选择 **[built-in] English question**，再点击
-**Run scenario**。这样即可用内置合成样本完成一次端到端验证，无需麦克风。
-
-这些包**没有**发布到 PyPI。也可以只用 pip 从本仓库安装：
+如果用了本地下载：
 
 ```bash
-# 在 X2-Turn 仓库根目录执行
-python -m pip install -e "./voxtral-realtime[transformers]"
-python -m pip install -e "./turn-demo"
-cd turn-demo && MODEL=Kaiqfu/X2-Turn-4B-0812 bash run.sh
+cd turn-demo
+MODEL="$PWD/../models/X2-Turn-4B-0812" bash run.sh
 ```
 
-完整对话系统请看
-[`full-duplex-demo/README.md`](full-duplex-demo/README.md)。
-那条路径会额外引入 patched vLLM、对话应用，以及外部 CosyVoice 环境。
+等到日志出现 `Uvicorn running on http://127.0.0.1:7860`。服务默认只监听
+本机，此时还不会加载 4B 权重。
 
-## 快速开始：本地 Transformers 推理
+### 4. 打开页面并运行内置样本
 
-这条路径**不会**启动 vLLM。它通过本地 Transformers 封装返回转写文本和
-80 毫秒 Turn 帧。若要把 WAV 送进生产环境的 turn 控制器，请用
-[`voxtral-realtime/examples/offline_inference.py`](voxtral-realtime/examples/README.md)，
-那条路径**需要** patched vLLM。
+打开 <http://localhost:7860>。
 
-推荐在仓库根目录使用 Miniforge：
+1. 选择 **[built-in] English question**。
+2. 点击 **Run scenario**。
 
-```bash
-conda env create -f environments/environment-transformers.yml
-conda activate x2-turn
-```
+不需要麦克风。第一次点击会把模型加载到 GPU，可能要几分钟。
+Transformers 可能会打印 `attention_mask` 或 `pad_token` 警告，可以忽略。
 
-也可以从本仓库安装 Transformers extra：
+### 5. 期望结果
 
-```bash
-# 在 X2-Turn 仓库根目录执行
-python -m pip install -e "./voxtral-realtime[transformers]"
-```
+内置音频大约 3.4 秒合成英语。成功时大致如下：
 
-在 `voxtral-realtime/` 下安装同一 extra：
+| 字段 | 典型值 |
+| --- | --- |
+| ASR 文本 | `hello can you tell me what the weather is like today` |
+| 帧数 | 约 **53** 帧，每帧 80 毫秒 |
+| 直方图 | `idle` 32、`noidle` 4、`speaking` 15、`turn_end` 2 |
+| 时间轴 | 先说话，再出现 `turn_end`，然后回到 `idle` |
 
-```bash
-cd voxtral-realtime
-python -m pip install -e ".[transformers]"
-```
+页面上的提示文本是 *Hello, could you tell me what the weather is like
+today?* 上面那行 ASR 是模型输出，不是把提示原文抄下来。不同 GPU 和软件
+版本下，计数可能差一两帧。只要转写接近这句话，并且在话音末尾附近看到
+`turn_end`，就说明安装成功了。
 
-无需修改 Transformers，也无需设置 `trust_remote_code`。下面的音频路径相对
-仓库根目录：
+## Demo 跑通之后
+
+### Python API（本地 Transformers）
+
+不启动服务，也不需要 vLLM。在仓库根目录、已激活 `x2-turn` 时：
 
 ```python
 import torch
@@ -127,7 +136,7 @@ from voxtral_realtime.transformers import (
     load_mtp_checkpoint,
 )
 
-model_id = "Kaiqfu/X2-Turn-4B-0812"
+model_id = "Kaiqfu/X2-Turn-4B-0812"  # 或 ./models/X2-Turn-4B-0812
 processor = AutoProcessor.from_pretrained(model_id)
 model = load_mtp_checkpoint(
     model_id,
@@ -142,9 +151,6 @@ for frame in result.turn_frames:
     print(frame.start_ms, frame.end_ms, frame.label, frame.confidence)
 ```
 
-已发布的 Hub 模型为 `Kaiqfu/X2-Turn-4B-0812`。离线或私有部署时，
-`model_id` 也可以指向本地 checkpoint 目录。
-
 把同样的结果写成 JSON：
 
 ```bash
@@ -154,34 +160,46 @@ python voxtral-realtime/integrations/transformers/examples/offline_inference.py 
   --output offline_frames.json
 ```
 
-仓库内置一条合成的 16 kHz 单声道音频。文本、来源、许可证及可复现的
-FFmpeg 生成命令见
+加载器不会修改 Transformers，也不需要 `trust_remote_code`。细节见
+[`voxtral-realtime/integrations/transformers/README.md`](voxtral-realtime/integrations/transformers/README.md)。
+内置样本的文本、许可证和 FFmpeg 命令见
 [`turn-demo/assets/README.md`](turn-demo/assets/README.md)。
+
+### 全双工对话 Demo
+
+这条路径会接入可选的 LLM 和 TTS，并演示播放过程中的用户打断。它是另一套
+安装：patched vLLM、对话应用，通常还要一个外部 CosyVoice 环境。请从
+[`full-duplex-demo/README.md`](full-duplex-demo/README.md) 开始。
+
+https://github.com/user-attachments/assets/4d322e97-b1ce-4e2e-ac35-d8089d965565
+
+### 用 vLLM 做实时服务
+
+标准 vLLM 不会输出自定义的 `turn.delta` 事件。请在 `voxtral-realtime/`
+目录下按
+[`vLLM 集成指南`](voxtral-realtime/integrations/vllm/README.md)
+操作。若要把 WAV 送进生产环境的 turn 控制器，等该运行时起来后使用
+[`voxtral-realtime/examples/offline_inference.py`](voxtral-realtime/examples/README.md)。
+
+本地服务默认绑定 `127.0.0.1`。只有在需要让其他机器连进来时，才设置
+`BIND_HOST=0.0.0.0`。
 
 ## 仓库结构
 
 - [`voxtral-realtime/`](voxtral-realtime/README.md)：模型封装、本地 ASR +
-  Turn 推理、实时控制器及 patched vLLM 集成。集成模型时建议从这里开始。
-- [`turn-demo/`](turn-demo/README.md)：专注展示原始 ASR、80 毫秒 Turn 状态和
-  帧级 token/class/probability 的浏览器 Demo，不依赖 LLM、TTS 或产品决策策略。
-- [`full-duplex-demo/`](full-duplex-demo/README.md)：将 X2 Turn 与可选 LLM、
-  TTS 服务组合起来的浏览器全双工对话 Demo。
-
-[`environments/`](environments/README.md) 提供三个相互独立的 Miniforge 环境，
-分别用于本地 Transformers 推理、patched vLLM 和全双工对话栈，从而避免大部分
-Torch 与 CUDA 依赖冲突。
-
-实时服务请参考
-[`vLLM 集成指南`](voxtral-realtime/integrations/vllm/README.md)，
-并在 `voxtral-realtime/` 目录下执行其中的命令。标准 vLLM 不会输出自定义的
-`turn.delta` 事件。本地服务默认绑定 `127.0.0.1`。
+  Turn 推理、实时控制器，以及 patched vLLM 集成。
+- [`turn-demo/`](turn-demo/README.md)：展示原始 ASR、80 毫秒 Turn 状态和
+  帧级 token / class / probability 表的浏览器 Demo。
+- [`full-duplex-demo/`](full-duplex-demo/README.md)：带可选 LLM 和 TTS 的
+  完整对话栈。
+- [`environments/`](environments/README.md)：相互独立的 Miniforge 环境，
+  避免 Transformers、patched vLLM 和对话应用挤在同一套 CUDA/Torch 里。
 
 ## 发布边界
 
-每个组件均保留独立的许可证与 Notice，因此可以分别发布。模型权重和模型元数据
-统一通过
-[Hugging Face 模型仓库](https://huggingface.co/Kaiqfu/X2-Turn-4B-0812)
-发布，不进入本源码仓库。
+每个组件均保留独立的许可证与 Notice。模型权重在
+[Hugging Face](https://huggingface.co/Kaiqfu/X2-Turn-4B-0812)
+上发布，不进入本源码仓库。
 
 禁止发布本地日志、证书、数据集、外部源码目录或任何凭据。
 
