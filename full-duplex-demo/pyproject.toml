@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "x-square-full-duplex-dialogue-demo"
+version = "0.1.0"
+description = "Browser-based full-duplex speech dialogue demo. Install from the X2-Turn checkout; not published to PyPI."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+dependencies = [
+  "fastapi>=0.110",
+  "numpy>=1.26",
+  "requests>=2.31",
+  "soxr>=0.3.7",
+  "uvicorn[standard]>=0.29",
+  "voxtral-realtime>=0.1.0",
+  "websocket-client>=1.7",
+]
+
+[project.optional-dependencies]
+demo = [
+  "edge-tts>=6.1",
+  "imageio-ffmpeg>=0.5",
+  "soundfile>=0.12",
+]
+llm = [
+  "accelerate>=0.28",
+  "torch>=2.2",
+  "transformers>=4.48",
+]
+tts = [
+  "soundfile>=0.12",
+  "torch>=2.2",
+  "torchaudio>=2.2",
+  "vllm>=0.7",
+]
+dev = [
+  "pytest>=8",
+  "ruff>=0.6",
+]
+
+[tool.setuptools]
+py-modules = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+extend-exclude = ["CosyVoice_official"]
+
+[tool.ruff.lint]
+# The demo retains upstream dialogue code with its original style. CI checks
+# syntax-level failures here; the standalone core package uses the strict rules.
+select = ["E9", "F63", "F7", "F82"]

@@ -1,0 +1,9 @@
+X2 Turn
+Copyright 2026 X Square contributors
+
+This repository includes software derived from Mistral AI's Voxtral Mini
+Realtime reference materials and a full-duplex dialogue demo adapted from
+SoulX-Duplug. Model weights are distributed separately through the Model Hub.
+
+See the NOTICE and THIRD_PARTY_NOTICES.md files within each component for
+detailed attribution and applicable third-party terms.

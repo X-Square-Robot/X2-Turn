@@ -1,0 +1,107 @@
+name: x-square-dialogue-demo
+
+x-demo: &demo
+  image: ${DEMO_IMAGE:-x-square-dialogue-demo:latest}
+  working_dir: /app
+  volumes:
+    - .:/app
+    - ${HF_HOME:-${HOME}/.cache/huggingface}:/root/.cache/huggingface
+  restart: unless-stopped
+
+services:
+  voxtral:
+    <<: *demo
+    command:
+      - python3
+      - -m
+      - vllm.entrypoints.cli.main
+      - serve
+      - ${VOXTRAL_VLLM_MODEL:-/models/X2-Turn-4B-0812-vllm}
+      - --served-model-name
+      - ${VOXTRAL_MODEL:-Kaiqfu/X2-Turn-4B-0812}
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8011"
+      - --tokenizer-mode
+      - mistral
+      - --enforce-eager
+    ports: ["8011:8011"]
+    gpus:
+      - driver: nvidia
+        device_ids: ["${TURN_GPU:-${VAD_GPU:-0}}"]
+        capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8011/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 60
+
+  turn-bridge:
+    <<: *demo
+    command:
+      - voxtral-realtime
+      - serve
+      - --vllm-url
+      - ws://voxtral:8011/v1/realtime
+      - --model
+      - ${VOXTRAL_MODEL:-Kaiqfu/X2-Turn-4B-0812}
+    ports: ["8000:8000"]
+    depends_on:
+      voxtral:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  llm:
+    <<: *demo
+    command: ["python3", "voxtral_bridge/llm_server.py", "--model_dir", "${LLM_MODEL:-Qwen/Qwen2.5-3B-Instruct}"]
+    ports: ["6007:6007"]
+    gpus:
+      - driver: nvidia
+        device_ids: ["${LLM_GPU:-2}"]
+        capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:6007/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 60
+
+  tts:
+    <<: *demo
+    profiles: ["cosyvoice"]
+    environment:
+      COSY_ROOT: /opt/CosyVoice
+    volumes:
+      - .:/app
+      - ${HF_HOME:-${HOME}/.cache/huggingface}:/root/.cache/huggingface
+      - ${COSY_ROOT:-./external/CosyVoice}:/opt/CosyVoice:ro
+    command: ["python3", "voxtral_bridge/tts_server_cosyvoice.py", "--model-dir", "${COSY_MODEL:-FunAudioLLM/CosyVoice2-0.5B}", "--port", "6017"]
+    ports: ["6017:6017"]
+    gpus:
+      - driver: nvidia
+        device_ids: ["${TTS_GPU:-1}"]
+        capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:6017/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 60
+
+  app:
+    <<: *demo
+    command: ["bash", "scripts/run_app.sh"]
+    environment:
+      TURN_API_URL: ws://turn-bridge:8000/turn
+      LLM_API_URL: http://llm:6007/chat
+      TTS_API_URL: ${TTS_API_URL:-http://tts:6017/tts}
+      DEMO_PORT: "8443"
+    ports: ["8443:8443"]
+    depends_on:
+      turn-bridge:
+        condition: service_healthy
+      llm:
+        condition: service_healthy

@@ -1,0 +1,45 @@
+name: Monorepo CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install components
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e "./voxtral-realtime[dev,transformers]"
+          python -m pip install -e "./turn-demo[dev]"
+          python -m pip install -e "./full-duplex-demo[demo,dev]"
+      - name: Validate release metadata
+        run: |
+          ruff check scripts/check_environments.py scripts/check_release_language.py scripts/check_public_release.py
+          python scripts/check_environments.py
+          python scripts/check_release_language.py
+          python scripts/check_public_release.py
+      - name: Validate core
+        working-directory: voxtral-realtime
+        run: |
+          ruff check .
+          ruff format --check .
+          pytest
+          pytest integrations/transformers/tests
+      - name: Validate turn demo
+        working-directory: turn-demo
+        run: |
+          ruff check .
+          pytest
+      - name: Validate full-duplex demo
+        working-directory: full-duplex-demo
+        run: |
+          ruff check .
+          pytest
+          bash -n start_demo.sh scripts/run_app.sh

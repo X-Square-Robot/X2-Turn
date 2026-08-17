@@ -1,0 +1,74 @@
+# ckpt
+asset
+checkpoints
+pretrain_models
+models/
+model_cache/
+external/
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+*.onnx
+*.engine
+
+# debug
+tmp
+.vscode
+
+# data
+eval/benchmark
+eval/record
+data/seedtts_testset
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[codz]
+*$py.class
+pretrained_models/
+outputs/
+logs/
+CosyVoice_official/
+*.pid
+certs/
+*.egg-info/
+*.egg
+.cache/
+.pytest_cache/
+.ruff_cache/
+
+# C extensions
+*.so
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# Environments
+.env
+.env.*
+!.env.example
+.envrc
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Distribution / packaging
+.Python
+
+# Cursor
+#  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
+#  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
+#  refer to https://docs.cursor.com/context/ignore-files
+.cursorignore
+.cursorindexingignore

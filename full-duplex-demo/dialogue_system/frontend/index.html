@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>X Square Full-Duplex Dialogue</title>
+  <link rel="stylesheet" href="style.css?v=20260813a">
+</head>
+
+<body>
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-card">
+      <div class="spinner-wrapper">
+        <span class="loading-spinner"></span>
+        <span class="loading-success hidden">✓</span>
+      </div>
+      <p id="loadingMessage">Connecting to server...</p>
+      <button id="loadingConfirmBtn" class="loading-btn hidden">Start Experience</button>
+    </div>
+  </div>
+  <div class="status-banner">
+    <div class="status-card">
+      <div class="status-icon">🎙️</div>
+      <div class="status-body">
+        <span class="status-label">VAD Status</span>
+        <div id="vadStatus" class="status-value" data-state="idle">Waiting for user speech</div>
+      </div>
+    </div>
+    <div class="status-card transcription-card">
+      <div class="status-icon">📝</div>
+      <div class="status-body">
+        <span class="status-label">User Transcription</span>
+        <div id="userTranscription" class="status-transcription user-transcription">No transcription yet</div>
+      </div>
+    </div>
+  </div>
+  <div class="workspace-layout">
+    <div class="main-container">
+      <div class="hero-copy">
+        <img class="brand-logo" src="x-square-logo.png" alt="X Square mascot">
+        <div class="hero-text">
+          <span class="hero-tag">Full-Duplex Voice AI</span>
+          <h1>X Square Demo</h1>
+        </div>
+      </div>
+      <div class="circle-container">
+        <div id="voiceCircle" class="voice-circle">
+          <span id="circleStatus" class="circle-status">READY</span>
+        </div>
+      </div>
+      <div class="bottom-controls">
+        <button id="startBtn" class="control-btn">Start</button>
+        <button id="stopBtn" class="control-btn" disabled>Stop</button>
+      </div>
+      <canvas id="waveformCanvas"></canvas>
+
+      <div class="timeline-panel">
+        <div class="timeline-header">
+          <span class="timeline-title">Realtime Timeline</span>
+          <span class="timeline-legend">
+            <i style="background:#38bdf8"></i>User
+            <i style="background:#34d399"></i>AI
+            <i style="background:#475569"></i>idle
+            <i style="background:#94a3b8"></i>noidle
+            <i style="background:#f59e0b"></i>speaking
+            <i style="background:#06b6d4"></i>turn_end
+            <i style="background:#a78bfa"></i>backchannel
+          </span>
+        </div>
+        <canvas id="timelineCanvas"></canvas>
+        <div class="decision-log-panel">
+          <div class="decision-log-header">
+            <span>Decision Log</span>
+            <span class="decision-log-legend">
+              <i class="leg leg-interrupt"></i>INTERRUPT
+              <i class="leg leg-accept"></i>ACCEPT
+              <i class="leg leg-reject"></i>REJECT
+            </span>
+          </div>
+          <div id="eventLog" class="event-log">
+            <div class="event-log-empty">No decisions yet</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="conversation-panel" aria-label="Conversation transcript">
+      <div class="conversation-header">
+        <div>
+          <div class="conversation-title">Conversation</div>
+          <div class="conversation-subtitle">Live ASR and LLM responses by turn</div>
+        </div>
+        <button id="clearConversationBtn" class="conversation-clear" type="button">Clear</button>
+      </div>
+      <div id="conversationLog" class="conversation-log" aria-live="polite">
+        <div class="conversation-empty">No conversation yet</div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">Full-Duplex Speech Dialogue System by X Square</div>
+
+  <script src="script.js?v=20260813c"></script>
+</body>
+
+</html>

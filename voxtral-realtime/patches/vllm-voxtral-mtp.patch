@@ -1,0 +1,381 @@
+diff --git a/vllm/entrypoints/openai/realtime/connection.py b/vllm/entrypoints/openai/realtime/connection.py
+index 58af329054e12a3efb9cfe0557236793ca5906ae..e15358d6973149afc3d06176a71a6e349fcd3f6d 100644
+--- a/vllm/entrypoints/openai/realtime/connection.py
++++ b/vllm/entrypoints/openai/realtime/connection.py
+@@ -21,6 +21,7 @@ from vllm.entrypoints.openai.realtime.protocol import (
+     SessionCreated,
+     TranscriptionDelta,
+     TranscriptionDone,
++    TurnDelta,
+ )
+ from vllm.entrypoints.openai.realtime.serving import OpenAIServingRealtime
+ from vllm.exceptions import VLLMValidationError
+@@ -228,19 +229,32 @@ class RealtimeConnection:
+             )
+ 
+             # Stream results back to client as they're generated
++            frame_index = 0
+             async for output in result_gen:
+                 if output.outputs and len(output.outputs) > 0:
+                     if not prompt_token_ids_len and output.prompt_token_ids:
+                         prompt_token_ids_len = len(output.prompt_token_ids)
+ 
+-                    delta = output.outputs[0].text
++                    completion = output.outputs[0]
++                    delta = completion.text
+                     full_text += delta
+ 
+-                    # append output to input
+-                    input_stream.put_nowait(list(output.outputs[0].token_ids))
++                    # append output to input (ASR tokens only; never turn ids)
++                    input_stream.put_nowait(list(completion.token_ids))
+                     await self.send(TranscriptionDelta(delta=delta))
+ 
+-                    completion_tokens_len += len(output.outputs[0].token_ids)
++                    if getattr(completion, "turn_class", None) is not None:
++                        await self.send(
++                            TurnDelta(
++                                turn_class=completion.turn_class,
++                                turn_id=int(completion.turn_id),
++                                probs=completion.turn_probs,
++                                frame_index=frame_index,
++                            )
++                        )
++                    frame_index += 1
++
++                    completion_tokens_len += len(completion.token_ids)
+ 
+                 if not self._is_connected:
+                     # finish because websocket connection was killed
+@@ -264,7 +278,8 @@ class RealtimeConnection:
+             await self.send_error(str(e), "processing_error")
+ 
+     async def send(
+-        self, event: SessionCreated | TranscriptionDelta | TranscriptionDone
++        self,
++        event: SessionCreated | TranscriptionDelta | TranscriptionDone | TurnDelta,
+     ):
+         """Send event to client."""
+         data = event.model_dump_json()
+diff --git a/vllm/entrypoints/openai/realtime/protocol.py b/vllm/entrypoints/openai/realtime/protocol.py
+index 25c5cd39d612a87883409e2786de5fcde5cc8cc5..5014c0c484d85750da2f793b7c533df146125c37 100644
+--- a/vllm/entrypoints/openai/realtime/protocol.py
++++ b/vllm/entrypoints/openai/realtime/protocol.py
+@@ -60,6 +60,16 @@ class TranscriptionDone(OpenAIBaseModel):
+     usage: UsageInfo | None = None
+ 
+ 
++class TurnDelta(OpenAIBaseModel):
++    """Per-frame Voxtral MTP turn-class prediction (ids 35-40)."""
++
++    type: Literal["turn.delta"] = "turn.delta"
++    turn_class: str  # idle|noidle|speaking|turn_end|backchannel|uncertain
++    turn_id: int  # 35-40
++    probs: list[float] | None = None  # length-6 softmax over turn slots
++    frame_index: int | None = None
++
++
+ class ErrorEvent(OpenAIBaseModel):
+     """Error notification"""
+ 
+diff --git a/vllm/model_executor/models/registry.py b/vllm/model_executor/models/registry.py
+index 0ed348adfa55a0e73491f179872a83e17d2f9908..3d7fcb3a0915d92568c94ace19ca5f357359712f 100644
+--- a/vllm/model_executor/models/registry.py
++++ b/vllm/model_executor/models/registry.py
+@@ -530,6 +530,11 @@ _MULTIMODAL_MODELS = {
+     "UltravoxModel": ("ultravox", "UltravoxModel"),
+     "VoxtralForConditionalGeneration": ("voxtral", "VoxtralForConditionalGeneration"),
+     "VoxtralRealtimeGeneration": ("voxtral_realtime", "VoxtralRealtimeGeneration"),
++    # HF training checkpoints use this architecture name in config.json.
++    "VoxtralRealtimeForConditionalGeneration": (
++        "voxtral_realtime",
++        "VoxtralRealtimeGeneration",
++    ),
+     # [Encoder-decoder]
+     "CohereAsrForConditionalGeneration": (
+         "cohere_asr",
+diff --git a/vllm/model_executor/models/voxtral_realtime.py b/vllm/model_executor/models/voxtral_realtime.py
+index b70714a0d83a072403feee1892f1a986e1f64dad..1012590972689eabc082bfa2fefbeb4635f089bf 100644
+--- a/vllm/model_executor/models/voxtral_realtime.py
++++ b/vllm/model_executor/models/voxtral_realtime.py
+@@ -22,6 +22,8 @@ from vllm.engine.protocol import StreamingInput
+ from vllm.envs import VLLM_ENGINE_ITERATION_TIMEOUT_S
+ from vllm.inputs import PromptType, TokensPrompt
+ from vllm.logger import init_logger
++from vllm.model_executor.layers.linear import ReplicatedLinear
++from vllm.model_executor.model_loader.weight_utils import default_weight_loader
+ from vllm.model_executor.models.interfaces import MultiModalEmbeddings, SupportsRealtime
+ from vllm.model_executor.models.voxtral import (
+     VoxtralDummyInputsBuilder,
+@@ -29,6 +31,11 @@ from vllm.model_executor.models.voxtral import (
+     VoxtralMultiModalProcessor,
+     VoxtralProcessingInfo,
+ )
++from vllm.model_executor.models.voxtral_mtp_utils import (
++    TURN_ID_TO_NAME,
++    remap_mtp_weights,
++    turn_preds_from_hidden,
++)
+ from vllm.multimodal import MULTIMODAL_REGISTRY
+ from vllm.multimodal.cache import _I, BaseMultiModalProcessorCache
+ from vllm.multimodal.inputs import MultiModalKwargsOptionalItems
+@@ -232,6 +239,75 @@ class VoxtralRealtimeGeneration(VoxtralForConditionalGeneration, SupportsRealtim
+         audio_config = self.tokenizer.instruct.audio_encoder.audio_config
+         self.n_delay_tokens = audio_config.get_num_delay_tokens()
+ 
++        # Optional MTP turn head (loaded if checkpoint contains vad_lm_head).
++        hidden = int(self.config.text_config.hidden_size)
++        vocab = int(self.config.text_config.vocab_size)
++        self.vad_lm_head = ReplicatedLinear(
++            hidden,
++            vocab,
++            bias=False,
++            return_bias=False,
++            prefix=f"{prefix}.vad_lm_head" if prefix else "vad_lm_head",
++        )
++        self.has_turn_head = False
++
++    def compute_turn_preds(
++        self, hidden_states: torch.Tensor
++    ) -> tuple[list[int], list[list[float]]] | None:
++        """Per-row turn class ids + 6-way probs, or None if head unloaded."""
++        if not self.has_turn_head:
++            return None
++        return turn_preds_from_hidden(self.vad_lm_head, hidden_states)
++
++    def load_weights(self, weights: Iterable[tuple[str, torch.Tensor]]) -> set[str]:
++        weight_list = list(weights)
++        # Only HF / training-checkpoint layouts need remap + HF→mistral
++        # Q/K inv-permute.  Exported ``consolidated.safetensors`` is already
++        # mistral-keyed; detecting solely via ``vad_lm_head`` would re-apply
++        # inv-permute and scramble attention (empty ASR / all-idle turn).
++        looks_like_hf = any(
++            n.startswith("base_model.")
++            or n.startswith("model.")
++            or n.startswith("audio_tower.")
++            or n.startswith("language_model.")
++            or n.startswith("multi_modal_projector.")
++            for n, _ in weight_list
++        )
++
++        vad_weight = None
++        if looks_like_hf:
++            remapped, vad_weight = remap_mtp_weights(weight_list)
++            loaded = super().load_weights(remapped)
++        else:
++            filtered: list[tuple[str, torch.Tensor]] = []
++            for n, t in weight_list:
++                if n == "vad_lm_head.weight" or n.endswith("vad_lm_head.weight"):
++                    vad_weight = t
++                else:
++                    filtered.append((n, t))
++            loaded = super().load_weights(filtered)
++
++        if vad_weight is not None:
++            param = self.vad_lm_head.weight
++            weight_loader = getattr(param, "weight_loader", default_weight_loader)
++            weight_loader(param, vad_weight)
++            loaded.add("vad_lm_head.weight")
++            self.has_turn_head = True
++            logger.info(
++                "Loaded Voxtral MTP vad_lm_head (%s).",
++                ", ".join(TURN_ID_TO_NAME.values()),
++            )
++        else:
++            # Stock checkpoints have no turn head. Initialize from ASR lm_head
++            # so the loader does not treat vad_lm_head as missing, and keep
++            # turn emission disabled.
++            with torch.no_grad():
++                src = self.language_model.lm_head.weight
++                self.vad_lm_head.weight.data.copy_(src.data)
++            loaded.add("vad_lm_head.weight")
++            self.has_turn_head = False
++        return loaded
++
+     # for realtime transcription
+     @classmethod
+     async def buffer_realtime_audio(
+diff --git a/vllm/outputs.py b/vllm/outputs.py
+index 2c71d2afb1b5f743ed4376e10ecd0fae935d00ef..2f03d02407f7bcb502490e18252389c198d091ef 100644
+--- a/vllm/outputs.py
++++ b/vllm/outputs.py
+@@ -46,6 +46,10 @@ class CompletionOutput:
+     finish_reason: str | None = None
+     stop_reason: int | str | None = None
+     lora_request: LoRARequest | None = None
++    # Voxtral MTP turn head (last frame in this delta), optional.
++    turn_class: str | None = None
++    turn_id: int | None = None
++    turn_probs: list[float] | None = None
+ 
+     def finished(self) -> bool:
+         return self.finish_reason is not None
+diff --git a/vllm/v1/core/sched/scheduler.py b/vllm/v1/core/sched/scheduler.py
+index fe524ccace162ce1533b62423fcfa6e4d15325c5..2ccd7cf939c85b4d11c01251389f85ca16d772a6 100644
+--- a/vllm/v1/core/sched/scheduler.py
++++ b/vllm/v1/core/sched/scheduler.py
+@@ -1363,6 +1363,19 @@ class Scheduler(SchedulerInterface):
+                 sampled_token_ids[req_index] if sampled_token_ids else []
+             )
+ 
++            turn_class_ids = getattr(model_runner_output, "turn_class_ids", None)
++            turn_probs_batch = getattr(model_runner_output, "turn_probs", None)
++            turn_class_id = (
++                turn_class_ids[req_index]
++                if turn_class_ids is not None and req_index < len(turn_class_ids)
++                else None
++            )
++            turn_probs = (
++                turn_probs_batch[req_index]
++                if turn_probs_batch is not None and req_index < len(turn_probs_batch)
++                else None
++            )
++
+             scheduled_spec_token_ids = (
+                 scheduler_output.scheduled_spec_decode_tokens.get(req_id)
+             )
+@@ -1471,6 +1484,8 @@ class Scheduler(SchedulerInterface):
+                         num_external_computed_tokens=request.num_external_computed_tokens,
+                         routed_experts=routed_experts,
+                         num_nans_in_logits=request.num_nans_in_logits,
++                        turn_class_id=turn_class_id,
++                        turn_probs=turn_probs,
+                     )
+                 )
+             else:
+diff --git a/vllm/v1/engine/__init__.py b/vllm/v1/engine/__init__.py
+index 114d45fc4ff755827c38ed499630a3e35206e77d..2e78327d79e6345d9d8187196ae9bbcb732f8a46 100644
+--- a/vllm/v1/engine/__init__.py
++++ b/vllm/v1/engine/__init__.py
+@@ -166,6 +166,10 @@ class EngineCoreOutput(
+     # A value greater than 0 indicates that the output is corrupted.
+     num_nans_in_logits: int = 0
+ 
++    # Optional Voxtral MTP turn prediction for this step.
++    turn_class_id: int | None = None
++    turn_probs: list[float] | None = None
++
+     @property
+     def finished(self) -> bool:
+         return self.finish_reason is not None
+diff --git a/vllm/v1/engine/output_processor.py b/vllm/v1/engine/output_processor.py
+index f9e9650922884ac2e2c9a1f3f1f628346df4a211..938b700ba10478d63c66a5f1d547e2658dc1daf7 100644
+--- a/vllm/v1/engine/output_processor.py
++++ b/vllm/v1/engine/output_processor.py
+@@ -274,6 +274,8 @@ class RequestState:
+         stop_reason: int | str | None,
+         kv_transfer_params: dict[str, Any] | None = None,
+         routed_experts: np.ndarray | None = None,
++        turn_class_id: int | None = None,
++        turn_probs: list[float] | None = None,
+     ) -> RequestOutput | PoolingRequestOutput | None:
+         finished = finish_reason is not None
+         final_only = self.output_kind == RequestOutputKind.FINAL_ONLY
+@@ -315,7 +317,12 @@ class RequestState:
+             )
+ 
+         output = self._new_completion_output(
+-            new_token_ids, finish_reason, stop_reason, routed_experts
++            new_token_ids,
++            finish_reason,
++            stop_reason,
++            routed_experts,
++            turn_class_id=turn_class_id,
++            turn_probs=turn_probs,
+         )
+ 
+         if self.parent_req is None:
+@@ -379,6 +386,8 @@ class RequestState:
+         finish_reason: FinishReason | None,
+         stop_reason: int | str | None,
+         routed_experts: np.ndarray | None = None,
++        turn_class_id: int | None = None,
++        turn_probs: list[float] | None = None,
+     ) -> CompletionOutput:
+         assert self.detokenizer is not None
+         assert self.logprobs_processor is not None
+@@ -395,6 +404,12 @@ class RequestState:
+         if delta and logprobs:
+             logprobs = logprobs[-len(token_ids) :]
+ 
++        turn_class = None
++        if turn_class_id is not None:
++            from vllm.model_executor.models.voxtral_mtp_utils import TURN_ID_TO_NAME
++
++            turn_class = TURN_ID_TO_NAME.get(int(turn_class_id))
++
+         return CompletionOutput(
+             index=self.request_index,
+             text=text,
+@@ -404,6 +419,9 @@ class RequestState:
+             cumulative_logprob=self.logprobs_processor.cumulative_logprob,
+             finish_reason=str(finish_reason) if finished else None,
+             stop_reason=stop_reason if finished else None,
++            turn_class=turn_class,
++            turn_id=turn_class_id,
++            turn_probs=turn_probs,
+         )
+ 
+     def _new_pooling_output(self, pooling_output: torch.Tensor) -> PoolingOutput:
+@@ -619,6 +637,8 @@ class OutputProcessor:
+             routed_experts = engine_core_output.routed_experts
+             req_state.num_cached_tokens = engine_core_output.num_cached_tokens
+             req_state.is_prefilling = False
++            turn_class_id = getattr(engine_core_output, "turn_class_id", None)
++            turn_probs = getattr(engine_core_output, "turn_probs", None)
+ 
+             if pooling_output is None:
+                 assert req_state.detokenizer is not None
+@@ -643,6 +663,8 @@ class OutputProcessor:
+                 stop_reason,
+                 kv_transfer_params,
+                 routed_experts,
++                turn_class_id=turn_class_id,
++                turn_probs=turn_probs,
+             ):
+                 if req_state.streaming_input:
+                     request_output.finished = False
+diff --git a/vllm/v1/outputs.py b/vllm/v1/outputs.py
+index 8eb58de4f3fdca386de7164f66e3c8d73d2af8a4..bb3966da285119aa68dee35df438c7d7f346c083 100644
+--- a/vllm/v1/outputs.py
++++ b/vllm/v1/outputs.py
+@@ -253,6 +253,11 @@ class ModelRunnerOutput:
+     # information related to cudagraph execution
+     cudagraph_stats: CUDAGraphStat | None = None
+ 
++    # Optional Voxtral MTP turn-head outputs (per request, aligned with
++    # sampled_token_ids rows). turn_class_ids are tekken ids 35-40.
++    turn_class_ids: list[int | None] | None = None
++    turn_probs: list[list[float] | None] | None = None
++
+ 
+ # ModelRunnerOutput wrapper for async scheduling.
+ class AsyncModelRunnerOutput(ABC):
+diff --git a/vllm/v1/worker/gpu_model_runner.py b/vllm/v1/worker/gpu_model_runner.py
+index 2e62206daa81aaf25bea836fbd4d661832f4101e..7c295281e588f0e0e15efe247581b5fefa884d31 100644
+--- a/vllm/v1/worker/gpu_model_runner.py
++++ b/vllm/v1/worker/gpu_model_runner.py
+@@ -4328,6 +4328,23 @@ class GPUModelRunner(
+                 cudagraph_stats=cudagraph_stats,
+             )
+ 
++            # Voxtral MTP: attach per-request turn class from vad_lm_head.
++            compute_turn = getattr(self.model, "compute_turn_preds", None)
++            if compute_turn is not None and sample_hidden_states is not None:
++                turn_out = compute_turn(sample_hidden_states)
++                if turn_out is not None:
++                    turn_ids, turn_probs = turn_out
++                    # Align with req order in output (same as logits rows).
++                    n = len(req_ids_output_copy)
++                    if len(turn_ids) >= n:
++                        output.turn_class_ids = turn_ids[:n]
++                        output.turn_probs = turn_probs[:n]
++                    else:
++                        # Pad if fewer rows than requests (should be rare).
++                        pad_n = n - len(turn_ids)
++                        output.turn_class_ids = turn_ids + [None] * pad_n
++                        output.turn_probs = turn_probs + [None] * pad_n
++
+         if not self.use_async_scheduling:
+             return output
+ 

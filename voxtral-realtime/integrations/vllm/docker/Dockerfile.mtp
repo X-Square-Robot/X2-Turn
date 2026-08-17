@@ -1,0 +1,10 @@
+ARG BASE_IMAGE=vllm/vllm-openai:v0.19.1
+FROM ${BASE_IMAGE}
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends patch && rm -rf /var/lib/apt/lists/*
+COPY patches/vllm-voxtral-mtp.patch /tmp/mtp.patch
+COPY integrations/vllm/vllm/model_executor/models/voxtral_mtp_utils.py /tmp/voxtral_mtp_utils.py
+RUN site_parent="$(python -c 'import pathlib,vllm; print(pathlib.Path(vllm.__file__).parent.parent)')" && \
+    patch --batch --forward -p1 -d "$site_parent" < /tmp/mtp.patch && \
+    install -m644 /tmp/voxtral_mtp_utils.py "$site_parent/vllm/model_executor/models/voxtral_mtp_utils.py" && \
+    rm /tmp/mtp.patch /tmp/voxtral_mtp_utils.py

@@ -1,0 +1,17 @@
+# Local model artifacts are distributed through the Model Hub.
+voxtral-mtp-turn/
+/models/
+
+# Local runtime artifacts.
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.ruff_cache/
+**/*.egg-info/
+full-duplex-demo/logs/
+full-duplex-demo/certs/
+turn-demo/logs/
+
+# Raw demo recordings; publish optimized web assets instead.
+/dialogue_demo.mp4
+/turn_demo.mp4
