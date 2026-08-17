@@ -37,7 +37,7 @@ async def run(url: str, model: str, audio: str) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--url", default="ws://127.0.0.1:8011/v1/realtime")
-    parser.add_argument("--model", default="Kaiqfu/X2-Turn-4B-0812")
+    parser.add_argument("--model", default="x-square-robot/X2-Turn-4B-0812")
     parser.add_argument("--audio", required=True)
     args = parser.parse_args()
     asyncio.run(run(args.url, args.model, args.audio))

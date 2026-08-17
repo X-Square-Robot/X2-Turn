@@ -6,7 +6,7 @@ import os
 from dataclasses import dataclass, fields
 from typing import Any, get_type_hints
 
-DEFAULT_MODEL_ID = "Kaiqfu/X2-Turn-4B-0812"
+DEFAULT_MODEL_ID = "x-square-robot/X2-Turn-4B-0812"
 DEFAULT_VLLM_URL = "ws://127.0.0.1:8011/v1/realtime"
 
 

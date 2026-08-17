@@ -78,7 +78,7 @@ pip install -e ./cosyvoice_vllm_plugin
 
 Defaults may be replaced with local paths:
 
-- Turn/ASR: `Kaiqfu/X2-Turn-4B-0812`
+- Turn/ASR: `x-square-robot/X2-Turn-4B-0812`
 - LLM: `Qwen/Qwen2.5-3B-Instruct`
 - TTS: `FunAudioLLM/CosyVoice2-0.5B`
 

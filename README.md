@@ -13,7 +13,7 @@
     <strong>Frame-synchronous streaming ASR and turn-state prediction</strong>
   </p>
   <p>
-    <a href="https://huggingface.co/Kaiqfu/X2-Turn-4B-0812"><img src="https://img.shields.io/badge/Hugging%20Face-X2--Turn--4B--0812-yellow" alt="Hugging Face model"></a>
+    <a href="https://huggingface.co/x-square-robot/X2-Turn-4B-0812"><img src="https://img.shields.io/badge/Hugging%20Face-X2--Turn--4B--0812-yellow" alt="Hugging Face model"></a>
     <a href="https://arxiv.org/abs/2608.10878"><img src="https://img.shields.io/badge/arXiv-2608.10878-b31b1b" alt="X2-Turn paper"></a>
     <img src="https://img.shields.io/badge/Python-3.10%2B-blue" alt="Python 3.10+">
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-green" alt="Apache-2.0"></a>
@@ -41,7 +41,7 @@ until the demo has produced the expected result below.
 
 - Linux with an NVIDIA GPU and **at least 24 GB of VRAM**
 - Miniforge or Conda, and Git
-- Network access to [Hugging Face](https://huggingface.co/Kaiqfu/X2-Turn-4B-0812)
+- Network access to [Hugging Face](https://huggingface.co/x-square-robot/X2-Turn-4B-0812)
 
 **The first run is slow.** Creating the environment, downloading the 4B
 weights, and the first **Run scenario** click each take several minutes. The
@@ -50,7 +50,7 @@ web page can appear before the model is on the GPU. That is expected.
 ### 1. Create the environment
 
 ```bash
-git clone -b release/public_v4 https://github.com/cageyoko/X2-Turn.git
+git clone https://github.com/X-Square-Robot/X2-Turn.git
 cd X2-Turn
 
 conda env create -f environments/environment-transformers.yml
@@ -69,12 +69,12 @@ python -m pip install -e "./turn-demo"
 
 ### 2. Download the model
 
-The demo can fetch `Kaiqfu/X2-Turn-4B-0812` on first use. If Hugging Face
+The demo can fetch `x-square-robot/X2-Turn-4B-0812` on first use. If Hugging Face
 hangs, times out, or cannot reach the Hub, download the weights once:
 
 ```bash
 # from the X2-Turn repository root, with x2-turn activated
-huggingface-cli download Kaiqfu/X2-Turn-4B-0812 \
+huggingface-cli download x-square-robot/X2-Turn-4B-0812 \
   --local-dir ./models/X2-Turn-4B-0812
 ```
 
@@ -84,7 +84,7 @@ Then point `MODEL` at that folder in the next step.
 
 ```bash
 cd turn-demo
-MODEL=Kaiqfu/X2-Turn-4B-0812 bash run.sh
+MODEL=x-square-robot/X2-Turn-4B-0812 bash run.sh
 ```
 
 If you used the local download:
@@ -141,7 +141,7 @@ from voxtral_realtime.transformers import (
     load_mtp_checkpoint,
 )
 
-model_id = "Kaiqfu/X2-Turn-4B-0812"  # or ./models/X2-Turn-4B-0812
+model_id = "x-square-robot/X2-Turn-4B-0812"  # or ./models/X2-Turn-4B-0812
 processor = AutoProcessor.from_pretrained(model_id)
 model = load_mtp_checkpoint(
     model_id,
@@ -160,7 +160,7 @@ Write the same result to JSON:
 
 ```bash
 python voxtral-realtime/integrations/transformers/examples/offline_inference.py \
-  --model Kaiqfu/X2-Turn-4B-0812 \
+  --model x-square-robot/X2-Turn-4B-0812 \
   --audio turn-demo/assets/sample_en.wav \
   --output offline_frames.json
 ```
@@ -207,7 +207,7 @@ when another machine must connect.
 ## Release boundary
 
 Each component keeps its own license and notice. Model weights live on
-[Hugging Face](https://huggingface.co/Kaiqfu/X2-Turn-4B-0812), not in this
+[Hugging Face](https://huggingface.co/x-square-robot/X2-Turn-4B-0812), not in this
 source tree.
 
 Do not publish local logs, certificates, datasets, external source

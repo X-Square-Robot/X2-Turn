@@ -2,12 +2,12 @@
 set -euo pipefail
 
 BACKEND="${BACKEND:-hf}"
-MODEL="${MODEL:-Kaiqfu/X2-Turn-4B-0812}"
+MODEL="${MODEL:-x-square-robot/X2-Turn-4B-0812}"
 DEVICE="${DEVICE:-cuda:0}"
 HOST="${HOST:-127.0.0.1}"
 PORT="${PORT:-7860}"
 VLLM_URL="${VLLM_URL:-ws://127.0.0.1:8011/v1/realtime}"
-VLLM_MODEL="${VLLM_MODEL:-Kaiqfu/X2-Turn-4B-0812}"
+VLLM_MODEL="${VLLM_MODEL:-x-square-robot/X2-Turn-4B-0812}"
 PYTHON="${PYTHON:-python}"
 SSL_CERTFILE="${SSL_CERTFILE:-}"
 SSL_KEYFILE="${SSL_KEYFILE:-}"

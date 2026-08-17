@@ -76,7 +76,7 @@ The bridge defaults to `ws://127.0.0.1:8011/v1/realtime`. Configure the served
 model and URL without embedding local model paths:
 
 ```bash
-export VOXTRAL_MODEL_ID=Kaiqfu/X2-Turn-4B-0812
+export VOXTRAL_MODEL_ID=x-square-robot/X2-Turn-4B-0812
 export VLLM_URL=ws://127.0.0.1:8011/v1/realtime
 ```
 
@@ -87,7 +87,7 @@ another machine must connect.
 
 ```bash
 voxtral-realtime serve --host 127.0.0.1 --port 8000
-voxtral-realtime serve --model Kaiqfu/X2-Turn-4B-0812 \
+voxtral-realtime serve --model x-square-robot/X2-Turn-4B-0812 \
   --vllm-url ws://127.0.0.1:8011/v1/realtime
 ```
 

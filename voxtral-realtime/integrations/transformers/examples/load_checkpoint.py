@@ -21,7 +21,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--model",
-        default="Kaiqfu/X2-Turn-4B-0812",
+        default="x-square-robot/X2-Turn-4B-0812",
         help="Hugging Face model ID or local checkpoint directory",
     )
     parser.add_argument(

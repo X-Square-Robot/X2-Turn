@@ -12,7 +12,7 @@
     <strong>帧同步流式 ASR 与话轮状态预测</strong>
   </p>
   <p>
-    <a href="https://huggingface.co/Kaiqfu/X2-Turn-4B-0812"><img src="https://img.shields.io/badge/Hugging%20Face-X2--Turn--4B--0812-yellow" alt="Hugging Face 模型"></a>
+    <a href="https://huggingface.co/x-square-robot/X2-Turn-4B-0812"><img src="https://img.shields.io/badge/Hugging%20Face-X2--Turn--4B--0812-yellow" alt="Hugging Face 模型"></a>
     <a href="https://arxiv.org/abs/2608.10878"><img src="https://img.shields.io/badge/arXiv-2608.10878-b31b1b" alt="X2-Turn 论文"></a>
     <img src="https://img.shields.io/badge/Python-3.10%2B-blue" alt="Python 3.10+">
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-green" alt="Apache-2.0"></a>
@@ -40,7 +40,7 @@ Python API。
 
 - Linux，一块 NVIDIA GPU，**显存至少 24 GB**
 - Miniforge 或 Conda，以及 Git
-- 能访问 [Hugging Face](https://huggingface.co/Kaiqfu/X2-Turn-4B-0812)
+- 能访问 [Hugging Face](https://huggingface.co/x-square-robot/X2-Turn-4B-0812)
   的网络
 
 **第一次会很慢。** 创建环境、下载 4B 权重、以及第一次点击 **Run scenario**
@@ -49,7 +49,7 @@ Python API。
 ### 1. 创建环境
 
 ```bash
-git clone -b release/public_v4 https://github.com/cageyoko/X2-Turn.git
+git clone https://github.com/X-Square-Robot/X2-Turn.git
 cd X2-Turn
 
 conda env create -f environments/environment-transformers.yml
@@ -67,12 +67,12 @@ python -m pip install -e "./turn-demo"
 
 ### 2. 下载模型
 
-Demo 会在首次推理时拉取 `Kaiqfu/X2-Turn-4B-0812`。如果 Hugging Face
+Demo 会在首次推理时拉取 `x-square-robot/X2-Turn-4B-0812`。如果 Hugging Face
 卡住、超时，或访问不了 Hub，就先把权重下载到本地：
 
 ```bash
 # 在 X2-Turn 仓库根目录，并已 conda activate x2-turn
-huggingface-cli download Kaiqfu/X2-Turn-4B-0812 \
+huggingface-cli download x-square-robot/X2-Turn-4B-0812 \
   --local-dir ./models/X2-Turn-4B-0812
 ```
 
@@ -82,7 +82,7 @@ huggingface-cli download Kaiqfu/X2-Turn-4B-0812 \
 
 ```bash
 cd turn-demo
-MODEL=Kaiqfu/X2-Turn-4B-0812 bash run.sh
+MODEL=x-square-robot/X2-Turn-4B-0812 bash run.sh
 ```
 
 如果用了本地下载：
@@ -136,7 +136,7 @@ from voxtral_realtime.transformers import (
     load_mtp_checkpoint,
 )
 
-model_id = "Kaiqfu/X2-Turn-4B-0812"  # 或 ./models/X2-Turn-4B-0812
+model_id = "x-square-robot/X2-Turn-4B-0812"  # 或 ./models/X2-Turn-4B-0812
 processor = AutoProcessor.from_pretrained(model_id)
 model = load_mtp_checkpoint(
     model_id,
@@ -155,7 +155,7 @@ for frame in result.turn_frames:
 
 ```bash
 python voxtral-realtime/integrations/transformers/examples/offline_inference.py \
-  --model Kaiqfu/X2-Turn-4B-0812 \
+  --model x-square-robot/X2-Turn-4B-0812 \
   --audio turn-demo/assets/sample_en.wav \
   --output offline_frames.json
 ```
@@ -198,7 +198,7 @@ https://github.com/user-attachments/assets/4d322e97-b1ce-4e2e-ac35-d8089d965565
 ## 发布边界
 
 每个组件均保留独立的许可证与 Notice。模型权重在
-[Hugging Face](https://huggingface.co/Kaiqfu/X2-Turn-4B-0812)
+[Hugging Face](https://huggingface.co/x-square-robot/X2-Turn-4B-0812)
 上发布，不进入本源码仓库。
 
 禁止发布本地日志、证书、数据集、外部源码目录或任何凭据。
