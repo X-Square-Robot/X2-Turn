@@ -31,7 +31,7 @@ under `integrations/vllm/`; `tests/test_overlay.py` guards the expected file set
 
 ## Convert canonical weights
 
-Download `Kaiqfu/X2-Turn-4B-0812` from the Model Hub or use an equivalent local
+Download `x-square-robot/X2-Turn-4B-0812` from the Model Hub or use an equivalent local
 checkpoint directory. vLLM should load the exported directory, which uses
 Mistral keys in `consolidated.safetensors` and includes `vad_lm_head.weight`.
 

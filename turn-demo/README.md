@@ -17,7 +17,7 @@ activate `x2-turn`, then:
 
 ```bash
 cd turn-demo
-MODEL=Kaiqfu/X2-Turn-4B-0812 bash run.sh
+MODEL=x-square-robot/X2-Turn-4B-0812 bash run.sh
 
 # After huggingface-cli download, or a private checkpoint:
 MODEL=/path/to/X2-Turn-4B-0812 bash run.sh
@@ -57,7 +57,7 @@ then:
 cd turn-demo
 BACKEND=vllm \
 VLLM_URL=ws://127.0.0.1:8011/v1/realtime \
-VLLM_MODEL=Kaiqfu/X2-Turn-4B-0812 \
+VLLM_MODEL=x-square-robot/X2-Turn-4B-0812 \
 bash run.sh
 ```
 

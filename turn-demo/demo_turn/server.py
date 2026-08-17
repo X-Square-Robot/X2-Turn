@@ -4,12 +4,12 @@
 Usage:
   # HF (load MTP locally)
   CUDA_VISIBLE_DEVICES=0 python -m demo_turn.server \\
-      --model Kaiqfu/X2-Turn-4B-0812 --port 7860
+      --model x-square-robot/X2-Turn-4B-0812 --port 7860
 
   # vLLM (connect to a running MTP realtime service)
   python -m demo_turn.server --backend vllm \\
       --vllm-url ws://127.0.0.1:8011/v1/realtime \\
-      --vllm-model Kaiqfu/X2-Turn-4B-0812 \\
+      --vllm-model x-square-robot/X2-Turn-4B-0812 \\
       --port 7860
 
 Click "Start Online Streaming" to view ASR, turn states, and decisions as you speak.
@@ -887,7 +887,7 @@ def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument(
         "--model",
-        default="Kaiqfu/X2-Turn-4B-0812",
+        default="x-square-robot/X2-Turn-4B-0812",
         help="HF checkpoint (backend=hf) or fallback path for vLLM model id",
     )
     p.add_argument(

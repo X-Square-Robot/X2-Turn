@@ -24,7 +24,7 @@ conda env create -f environments/environment-transformers.yml
 conda activate x2-turn
 
 python voxtral-realtime/integrations/transformers/examples/offline_inference.py \
-  --model Kaiqfu/X2-Turn-4B-0812 \
+  --model x-square-robot/X2-Turn-4B-0812 \
   --audio turn-demo/assets/sample_en.wav \
   --output offline_frames.json
 ```

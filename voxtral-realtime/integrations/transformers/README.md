@@ -31,7 +31,7 @@ from voxtral_realtime.transformers import (
     load_mtp_checkpoint,
 )
 
-model_id = "Kaiqfu/X2-Turn-4B-0812"
+model_id = "x-square-robot/X2-Turn-4B-0812"
 processor = AutoProcessor.from_pretrained(model_id)
 model = load_mtp_checkpoint(
     model_id,
@@ -60,7 +60,7 @@ The same loading example is available as a script. Run from
 
 ```bash
 python integrations/transformers/examples/load_checkpoint.py \
-  --model Kaiqfu/X2-Turn-4B-0812
+  --model x-square-robot/X2-Turn-4B-0812
 ```
 
 To transcribe one file and print all six-class turn predictions on the 80 ms
@@ -68,7 +68,7 @@ timeline (local Transformers, no vLLM):
 
 ```bash
 python integrations/transformers/examples/offline_inference.py \
-  --model Kaiqfu/X2-Turn-4B-0812 \
+  --model x-square-robot/X2-Turn-4B-0812 \
   --audio ../turn-demo/assets/sample_en.wav \
   --output offline_frames.json
 ```

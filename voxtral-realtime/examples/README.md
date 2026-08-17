@@ -36,7 +36,7 @@ Run every command below from the `voxtral-realtime/` directory.
 python examples/offline_inference.py \
   --audio ../turn-demo/assets/sample_en.wav \
   --output-dir offline_output \
-  --model Kaiqfu/X2-Turn-4B-0812 \
+  --model x-square-robot/X2-Turn-4B-0812 \
   --vllm-url ws://127.0.0.1:8011/v1/realtime
 ```
 
