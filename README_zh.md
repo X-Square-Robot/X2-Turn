@@ -65,14 +65,14 @@ Turn State Prediction](https://arxiv.org/abs/2608.10878)**
 
 视频展示了不依赖 LLM 或 TTS 的实时 ASR、六分类 Turn 时间轴及帧级预测结果。
 
-https://github.com/user-attachments/assets/216d00ee-b7bd-4964-b65c-8d0d16340591
+https://github.com/user-attachments/assets/4040eb7a-4f5b-4e25-8ff4-893caeeb0702
 
 ### 全双工对话 Demo 视频
 
 视频展示了一次完整会话中的流式 ASR、话轮状态跟踪、回复生成、语音播放及
 用户打断效果。
 
-https://github.com/user-attachments/assets/b64d9c74-7961-42cc-b7d0-392e0fba516e
+https://github.com/user-attachments/assets/4d322e97-b1ce-4e2e-ac35-d8089d965565
 
 ## 快速开始：推理一条音频
 
