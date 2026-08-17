@@ -60,6 +60,40 @@ speech playback, and user interruption in one session.
 
 https://github.com/user-attachments/assets/4d322e97-b1ce-4e2e-ac35-d8089d965565
 
+## Minimal path: Turn Demo (~5 minutes)
+
+If you only want to inspect ASR + Turn states, skip the full-duplex stack.
+You do **not** need CosyVoice, an LLM, or patched vLLM for this path.
+
+**Requirements:** Python 3.10+, a CUDA GPU for the 4B checkpoint, and network
+access to download `Kaiqfu/X2-Turn-4B-0812`.
+
+```bash
+# from the X2-Turn repository root
+conda env create -f environments/environment-transformers.yml
+conda activate x2-turn
+
+cd turn-demo
+MODEL=Kaiqfu/X2-Turn-4B-0812 bash run.sh
+```
+
+Open <http://localhost:7860>, choose **[built-in] English question**, then
+click **Run scenario**. That exercises the bundled synthetic sample without a
+microphone.
+
+Pip-only alternative (same packages, no Conda):
+
+```bash
+python -m pip install -e "voxtral-realtime[transformers]"
+python -m pip install -e "turn-demo"
+cd turn-demo && MODEL=Kaiqfu/X2-Turn-4B-0812 bash run.sh
+```
+
+When you later need a complete conversational stack, follow
+[`full-duplex-demo/README.md`](full-duplex-demo/README.md). That path adds
+separate environments for patched vLLM, the dialogue app, and an external
+CosyVoice checkout.
+
 ## Quick start: one audio file
 
 Recommended Miniforge setup, run from the repository root:

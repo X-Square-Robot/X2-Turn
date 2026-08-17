@@ -74,6 +74,38 @@ https://github.com/user-attachments/assets/4040eb7a-4f5b-4e25-8ff4-893caeeb0702
 
 https://github.com/user-attachments/assets/4d322e97-b1ce-4e2e-ac35-d8089d965565
 
+## 最小可行路径：Turn Demo（约 5 分钟）
+
+如果只想检查 ASR + Turn 状态，可以跳过全双工对话栈。
+这条路径**不需要** CosyVoice、LLM，也不需要打补丁的 vLLM。
+
+**环境要求：** Python 3.10+、可运行 4B 模型的 CUDA GPU，以及下载
+`Kaiqfu/X2-Turn-4B-0812` 的网络访问。
+
+```bash
+# 在 X2-Turn 仓库根目录执行
+conda env create -f environments/environment-transformers.yml
+conda activate x2-turn
+
+cd turn-demo
+MODEL=Kaiqfu/X2-Turn-4B-0812 bash run.sh
+```
+
+打开 <http://localhost:7860>，选择 **[built-in] English question**，再点击
+**Run scenario**。这样即可用内置合成样本完成一次端到端验证，无需麦克风。
+
+也可以只用 pip（不依赖 Conda）：
+
+```bash
+python -m pip install -e "voxtral-realtime[transformers]"
+python -m pip install -e "turn-demo"
+cd turn-demo && MODEL=Kaiqfu/X2-Turn-4B-0812 bash run.sh
+```
+
+如果后续需要完整对话系统，请看
+[`full-duplex-demo/README.md`](full-duplex-demo/README.md)。
+那条路径会额外引入 patched vLLM、对话应用，以及外部 CosyVoice 环境。
+
 ## 快速开始：推理一条音频
 
 推荐在仓库根目录使用 Miniforge 环境：

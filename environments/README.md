@@ -1,7 +1,6 @@
 # Miniforge environments
 
-Run all commands in this document from the `x2_turn_opensource` repository
-root. Miniforge is recommended because these files use the `conda-forge`
+Run all commands in this document from the `X2-Turn` repository root. Miniforge is recommended because these files use the `conda-forge`
 channel.
 
 The services intentionally use separate environments. Combining Transformers,

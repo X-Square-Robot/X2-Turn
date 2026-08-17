@@ -13,7 +13,7 @@ The six model outputs are `idle`, `noidle`, `speaking`, `turn_end`,
 
 ## Install
 
-From the `x2_turn_opensource` monorepo:
+From the `X2-Turn` repository root:
 
 ```bash
 python -m pip install -e "voxtral-realtime[transformers]"
