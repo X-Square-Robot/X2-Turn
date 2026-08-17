@@ -1,8 +1,9 @@
 # Replay one WAV through the realtime turn bridge
 
-This is **not** the local Transformers file-level decoder. That script is
-[`../integrations/transformers/examples/offline_inference.py`](../integrations/transformers/examples/offline_inference.py)
-and does not need vLLM.
+This script needs patched vLLM. For a first result without a server, use the
+repository [Quick start](../../README.md#quick-start) or the Transformers
+decoder at
+[`../integrations/transformers/examples/offline_inference.py`](../integrations/transformers/examples/offline_inference.py).
 
 `examples/offline_inference.py` replays one PCM WAV through the same acoustic
 gate, realtime vLLM client, and frame-level turn controller used by the `/turn`

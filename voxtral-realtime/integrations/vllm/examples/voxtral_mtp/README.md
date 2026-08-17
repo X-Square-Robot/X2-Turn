@@ -1,5 +1,8 @@
 # vLLM MTP examples
 
+Smoke-test patched vLLM after the overlay guide. New users should finish the
+repository [Quick start](../../../../../README.md#quick-start) first.
+
 After applying the overlay and exporting the Hugging Face checkpoint for vLLM,
 run these commands from the `voxtral-realtime/` directory.
 

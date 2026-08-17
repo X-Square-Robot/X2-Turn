@@ -1,5 +1,8 @@
 # Transformers loader
 
+For a browser check, use the repository
+[Quick start](../../../README.md#quick-start). This page is the Python loader.
+
 The installable model definition lives in
 [`src/voxtral_realtime/transformers/`](../../src/voxtral_realtime/transformers/).
 It is a regular PyTorch `nn.Module` wrapper around the unmodified

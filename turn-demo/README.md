@@ -1,62 +1,38 @@
 # X2 Turn Demo
 
-New users should follow the root
-[Quick start](../README.md#quick-start). This page is the extra detail
-behind that path.
+Follow the repository [Quick start](../README.md#quick-start) first. This page
+is extra detail: flags, TLS, microphone upload, and the optional vLLM backend.
 
-A standalone browser demo for inspecting X2 Turn without starting an LLM or
-TTS service. Upload or record speech to see:
+The demo shows streaming ASR, one six-class turn prediction every 80 ms, a
+timeline and histogram, and a raw frame table. It does not start an LLM or TTS
+service, and it does not turn frames into product actions.
 
-- streaming ASR text;
-- one six-class turn prediction every 80 ms;
-- the turn timeline and class histogram;
-- a raw frame table with frame time, ASR token, Turn class, and probability.
+The six labels are `idle`, `noidle`, `speaking`, `turn_end`, `backchannel`, and
+`uncertain`.
 
-The six model outputs are `idle`, `noidle`, `speaking`, `turn_end`,
-`backchannel`, and `uncertain`.
+## Local Transformers
 
-## Install
-
-These packages are not published to PyPI. From the `X2-Turn` repository root:
-
-```bash
-python -m pip install -e "./voxtral-realtime[transformers]"
-python -m pip install -e "./turn-demo[dev]"
-```
-
-Alternatively, create the shared Miniforge environment from the monorepo root:
-
-```bash
-conda env create -f environments/environment-transformers.yml
-conda activate x2-turn
-```
-
-## Start with local Transformers
-
-Use either a Hugging Face model ID or a local checkpoint directory:
+This is the same path as the root Quick start. From the repository root,
+activate `x2-turn`, then:
 
 ```bash
 cd turn-demo
 MODEL=Kaiqfu/X2-Turn-4B-0812 bash run.sh
 
-# For a local or private checkpoint:
+# After huggingface-cli download, or a private checkpoint:
 MODEL=/path/to/X2-Turn-4B-0812 bash run.sh
 ```
 
-Open <http://localhost:7860>. The 4B checkpoint needs a GPU with about
-**24 GB+ VRAM**. The model loads on the first **Run scenario**, upload, or
-microphone request—not when the server process starts. That first inference
-can take several minutes. Set `DEVICE=cpu` only for small tests.
+Open <http://localhost:7860>. The 4B checkpoint needs about **24 GB+ VRAM**.
+The model loads on the first **Run scenario**, upload, or microphone request,
+not when the process starts. That first inference can take several minutes.
 
-Select **[built-in] English question** and click **Run scenario** to test the
-model without recording or uploading audio. The browser player below the preset
-selector lets you hear the exact input before or after inference. The bundled
-16 kHz mono sample is synthetic; its text, provenance, license, and regeneration
-command are in [`assets/README.md`](assets/README.md). A typical result for
-that clip is in the root [Quick start](../README.md#quick-start).
+Choose **[built-in] English question** and click **Run scenario**. You do not
+need a microphone. Typical numbers for that clip are in the root
+[Quick start](../README.md#quick-start). Sample provenance is in
+[`assets/README.md`](assets/README.md).
 
-The server binds to `127.0.0.1` by default and has no authentication. For
-development TLS, provide a certificate and key:
+The server binds to `127.0.0.1` and has no authentication. For development TLS:
 
 ```bash
 HOST=0.0.0.0 \
@@ -65,15 +41,17 @@ SSL_KEYFILE=/path/to/key.pem \
 bash run.sh
 ```
 
-For public deployments, prefer an authenticated HTTPS reverse proxy and do not
-expose uploaded speech to an untrusted network.
+Do not expose uploaded speech on an untrusted network. Prefer an authenticated
+HTTPS reverse proxy for anything beyond localhost.
 
-## Start with realtime vLLM
+`DEVICE=cpu` is only for tiny tests. Uploads are capped at 20 MiB. Optional
+scenario JSONL files can be passed with `--test_jsonl`.
 
-Stock vLLM does not emit `turn.delta`. First start the patched runtime described
-in the
-[`voxtral-realtime` vLLM guide](../voxtral-realtime/integrations/vllm/README.md),
-then run:
+## After Transformers works: realtime vLLM
+
+Stock vLLM does not emit `turn.delta`. Start the patched runtime in
+[`voxtral-realtime/integrations/vllm/README.md`](../voxtral-realtime/integrations/vllm/README.md),
+then:
 
 ```bash
 cd turn-demo
@@ -83,24 +61,9 @@ VLLM_MODEL=Kaiqfu/X2-Turn-4B-0812 \
 bash run.sh
 ```
 
-The vLLM backend forwards microphone PCM to `/v1/realtime` and displays
-incremental ASR and turn frames. The local Transformers backend repeatedly
-decodes the accumulated microphone buffer and is intended for demonstration,
-not latency benchmarking.
-
-## Raw model outputs
-
-The demo intentionally does not convert Turn states into product actions. It
-shows the model's raw ASR text, six-class frame timeline, latest state, and
-class histogram. The frame-level text analysis table remains available, but it
-contains only frame time, ASR token, Turn class, and probability—no action or
-decision column. Applications should define their own response, rejection, and
-barge-in policies for their latency and interaction requirements.
-
-Optional scenario JSONL files can be supplied with `--test_jsonl`. The built-in
-synthetic Quickstart sample remains available without an external dataset.
-Upload and microphone inference are also available. Uploads are limited to
-20 MiB.
+The vLLM backend forwards microphone PCM to `/v1/realtime`. The Transformers
+backend re-decodes the accumulated buffer and is for inspection, not latency
+benchmarks.
 
 ## Validate
 

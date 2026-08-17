@@ -1,7 +1,11 @@
 # Miniforge environments
 
-Run all commands in this document from the `X2-Turn` repository root. Miniforge is recommended because these files use the `conda-forge`
-channel.
+This page lists the three Conda environments. New users should create
+`x2-turn` from the repository [Quick start](../README.md#quick-start) and
+come here only when adding patched vLLM or the full-duplex stack.
+
+Run all commands from the `X2-Turn` repository root. Miniforge is recommended
+because these files use the `conda-forge` channel.
 
 The environment files install local editable packages from this checkout. The
 Python packages are not published to PyPI.

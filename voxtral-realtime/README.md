@@ -1,9 +1,12 @@
 # Voxtral Realtime
 
-A small, standalone Python bridge for realtime ASR and frame-level turn taking
-with Voxtral served through vLLM's `/v1/realtime` WebSocket API.
+This package is the model wrapper and realtime `/turn` bridge. New users should
+finish the repository [Quick start](../README.md#quick-start) before serving
+vLLM.
 
-Install this package from the X2-Turn checkout. It is not published to PyPI.
+The bridge does realtime ASR and frame-level turn taking with Voxtral on
+vLLM's `/v1/realtime` WebSocket API. Install it from this checkout; it is not
+on PyPI.
 
 ## Two inference entry points
 

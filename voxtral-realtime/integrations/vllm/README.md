@@ -1,7 +1,10 @@
 # Custom vLLM inference overlay
 
-Stock vLLM does **not** emit `turn.delta`. This overlay is derived from an
-Apache-2.0 vLLM 0.19.1 checkout pinned at commit
+Do this after the Turn Demo in the repository
+[Quick start](../../../README.md#quick-start) works. Stock vLLM does **not**
+emit `turn.delta`.
+
+This overlay is derived from an Apache-2.0 vLLM 0.19.1 checkout pinned at commit
 `b1388b1fbf5aaef47937fabe98931211684666a6` and adds the Voxtral MTP turn head
 and realtime event propagation.
 

@@ -1,13 +1,28 @@
 # X Square Full-Duplex Dialogue Demo
 
-A browser-based, full-duplex speech dialogue pipeline with streaming
-transcription and turn prediction, streaming LLM output, low-latency TTS, and
-barge-in playback control.
+This page is for people who already finished the repository
+[Quick start](../README.md#quick-start) and now want a conversational stack.
+It is not the first path in this repository.
 
-The frontend and dialogue service were originally based on
+The demo streams ASR and turn states, a reply LLM, TTS, and barge-in during
+playback. The frontend comes from
 [SoulX-Duplug dialogue-system](https://github.com/Soul-AILab/SoulX-Duplug/tree/dialogue-system).
 Model weights, CosyVoice source, recordings, logs, and evaluation datasets are
-not distributed in this repository.
+not in this tree.
+
+## Before you start
+
+Work through this checklist first:
+
+1. The Turn Demo from the root README produces the expected built-in result.
+2. Patched vLLM is installed from
+   [`voxtral-realtime/integrations/vllm/README.md`](../voxtral-realtime/integrations/vllm/README.md).
+3. `VOXTRAL_VLLM_MODEL` is an **exported directory** that contains
+   `consolidated.safetensors`, not the Hugging Face model ID.
+4. You have separate environments for patched vLLM, this demo, and (unless
+   `TTS_BACKEND=edge`) upstream CosyVoice. See
+   [`../environments/README.md`](../environments/README.md).
+5. Linux, extra GPU memory, `curl`, and `openssl`.
 
 ## Service map
 
@@ -21,54 +36,51 @@ Browser (HTTPS :8443)
        └─ Streaming TTS HTTP :6017 (CosyVoice) or :6016 (Edge-TTS default)
 ```
 
-Detailed design:
+Each browser session keeps its own ASR buffer, LLM history, and a generation
+epoch. Stale LLM/TTS chunks from an interrupted turn are discarded. The demo
+owns orchestration only; ASR, the acoustic gate, and the frame controller live
+in `voxtral-realtime`.
 
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): end-to-end pipeline,
-  generation epochs, streaming TTS, and current limitations.
-- [`docs/STATE_MACHINE.md`](docs/STATE_MACHINE.md): 80 ms turn labels,
-  endpoint confirmation, acoustic veto, and backchannel policy.
-- [`docs/BRAND_ASSETS.md`](docs/BRAND_ASSETS.md): logo and trademark boundary.
+Local `start_demo.sh` binds these ports to `127.0.0.1` unless `BIND_HOST` is
+set. Compose publishes the same ports from container `0.0.0.0`.
 
-## Requirements
+## How turns are used
 
-- Linux, Python 3.10+, `curl`, and `openssl`
-- NVIDIA GPUs and compatible CUDA libraries for the default model stack
-- The local `voxtral-realtime` package and CLI from this checkout (not PyPI)
-- An external [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) checkout
-  when using the default TTS backend
+The model emits one of six labels every 80 ms: `idle`, `noidle`, `speaking`,
+`turn_end`, `backchannel`, `uncertain`. `idle` between those labels is normal.
+The app does **not** treat a single frame as an action.
 
-Install from the `X2-Turn` repository. The Python packages here are not
-published to PyPI:
+While TTS is playing, the demo stops playback only after audio has started
+**and** `turn_class == speaking`. `noidle` is not an interrupt. Endpoint
+confirmation, ASR tail wait, and backchannel policy are in
+`voxtral_realtime.turn.controller`.
+
+## Install
+
+The Python packages here are not on PyPI. From `full-duplex-demo/`:
 
 ```bash
-# from X2-Turn/full-duplex-demo/
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e ../voxtral-realtime
 python -m pip install -e '.[demo,llm]'
+```
 
-# In the separate environment used for CosyVoice:
+CosyVoice stays in its upstream environment. Do not copy that source tree into
+this repository. Install the TTS extra there:
+
+```bash
 pip install -e '.[tts]'
 pip install -e ./cosyvoice_vllm_plugin
 ```
 
-For Miniforge users, the monorepo provides separate dialogue and patched-vLLM
-environments in [`../environments/`](../environments/README.md). CosyVoice
-should still use its upstream-recommended environment.
-
-Follow the upstream CosyVoice installation instructions inside its own
-checkout. Do not copy that source tree into this repository.
-
 ## Model setup
 
-Defaults are public model IDs and may be replaced with local paths:
+Defaults may be replaced with local paths:
 
 - Turn/ASR: `Kaiqfu/X2-Turn-4B-0812`
 - LLM: `Qwen/Qwen2.5-3B-Instruct`
 - TTS: `FunAudioLLM/CosyVoice2-0.5B`
-
-Copy the environment template, set `COSY_ROOT`, and set `VOXTRAL_VLLM_MODEL`
-to the **exported vLLM directory** (not the Hugging Face model ID):
 
 ```bash
 # from full-duplex-demo/
@@ -77,113 +89,61 @@ cp .env.example .env
 # edit VOXTRAL_VLLM_MODEL=/absolute/path/to/X2-Turn-4B-0812-vllm
 ```
 
-`VOXTRAL_MODEL`, `LLM_MODEL`, and `COSY_MODEL` accept either hub IDs or model
-directories. Review every model's license and access requirements separately.
+`VOXTRAL_MODEL`, `LLM_MODEL`, and `COSY_MODEL` accept hub IDs or directories.
+`start_demo.sh` will not start vLLM unless `VOXTRAL_VLLM_MODEL` is a directory
+containing `consolidated.safetensors`. A healthy vLLM already on `:8011` is
+reused. The GPU for that service is `TURN_GPU` (`VAD_GPU` is a legacy alias).
 
-The Model Hub repository contains the canonical Hugging Face checkpoint. The
-patched vLLM runtime requires a separately exported vLLM directory. Follow
-[`../voxtral-realtime/integrations/vllm/README.md`](../voxtral-realtime/integrations/vllm/README.md)
-from the `voxtral-realtime/` directory to apply the pinned overlay and export
-the weights, then set:
-
-```bash
-VOXTRAL_VLLM_MODEL=/path/to/X2-Turn-4B-0812-vllm
-```
-
-`start_demo.sh` refuses to launch vLLM unless that path is a directory
-containing `consolidated.safetensors`. A healthy existing vLLM on `:8011` is
-reused.
-
-## Quickstart
-
-Local services bind to `127.0.0.1` by default. Set `BIND_HOST=0.0.0.0` only
-when another machine must connect. The GPU for patched vLLM is `TURN_GPU`
-(`VAD_GPU` remains a legacy alias).
+## Start
 
 ```bash
 # from full-duplex-demo/, after editing .env
 bash start_demo.sh
 ```
 
-Open `https://localhost:8443`. The script creates a development-only,
-self-signed localhost certificate if none exists. Use a trusted certificate
-and set `DEMO_PUBLIC_HOST`, `DEMO_SSL_CERT`, and `DEMO_SSL_KEY` for remote
-deployment.
+Open `https://localhost:8443`. The script may create a development-only
+self-signed certificate. For a remote host, set `DEMO_PUBLIC_HOST`,
+`DEMO_SSL_CERT`, and `DEMO_SSL_KEY`, and use a trusted certificate.
 
-The launcher starts and health-checks TTS, LLM, the Voxtral server, the turn
-bridge, and the web app. Existing healthy Voxtral and TTS services are reused.
-
-`docker-compose.yml` is a deployment template, not a turnkey image build. Set
-`DEMO_IMAGE` to an image that already contains this checkout and its Python
-dependencies before using Compose. The source-based `start_demo.sh` path above
-is the supported quickstart.
+Set `BIND_HOST=0.0.0.0` only when another machine must connect.
 
 ```bash
 bash start_demo.sh stop      # stop bridge, LLM, and app
 bash start_demo.sh stop-all  # also stop Voxtral and TTS
 ```
 
-Logs are written under `logs/`. To run only the frontend/app against existing
-services, set `TURN_API_URL`, `LLM_API_URL`, and `TTS_API_URL`, then run:
+Logs go under `logs/`. To attach the UI to services that are already running:
 
 ```bash
 bash scripts/run_app.sh
 ```
 
-The launcher enables an audio-free structured turn trace at
-`logs/turn_trace.jsonl`. It records one JSON object per model frame, including
-the six-class probabilities, incremental ASR, acoustic activity, production
-controller output, and whether the Dialogue App would stop TTS. Override or
-disable it with:
+Set `TTS_BACKEND=edge` to skip CosyVoice. Edge-TTS then listens on `:6016`
+unless `TTS_PORT` is set. Copying `.env.example` sets `TTS_PORT=6017` for both
+backends.
 
-```bash
-VOXTRAL_TRACE_JSONL=/another/private/path/turn_trace.jsonl bash start_demo.sh
-VOXTRAL_TRACE_JSONL= bash start_demo.sh  # disable
-```
-
-The trace stores transcripts and decision metadata but never PCM/audio. Keep it
-private and upload it to Turn Demo only when comparing the simplified and
-production policies.
-
-Set `TTS_BACKEND=edge` to use the lightweight Edge TTS fallback without
-`COSY_ROOT`. Edge-TTS then listens on `:6016` unless `TTS_PORT` is set.
-Copying `.env.example` sets `TTS_PORT=6017`, which applies to both backends.
-
-## Offline inference
-
-The demo does not bundle evaluation datasets or a second offline dialogue
-pipeline.
-
-- Local Transformers (no vLLM):
-  [`../voxtral-realtime/integrations/transformers/README.md`](../voxtral-realtime/integrations/transformers/README.md)
-- Replay a WAV through the production turn bridge (requires patched vLLM):
-  [`../voxtral-realtime/examples/README.md`](../voxtral-realtime/examples/README.md)
+The launcher writes an audio-free turn trace to `logs/turn_trace.jsonl`. Keep
+it private. Override or disable it with `VOXTRAL_TRACE_JSONL`.
 
 ## Containers
 
-`docker-compose.yml` separates Voxtral, turn bridge, LLM, TTS, and app
-services, with configurable GPU IDs. Set `DEMO_IMAGE` to an image containing
-this checkout and the selected dependency extras. Start CosyVoice with its
-profile:
+`docker-compose.yml` is a deployment template, not a turnkey image. Set
+`DEMO_IMAGE` to an image that already contains this checkout. Inside Compose,
+vLLM uses `--enforce-eager`, matching `serve.sh`.
 
 ```bash
 COSY_ROOT=/path/to/CosyVoice docker compose --profile cosyvoice up
 ```
 
-Compose is a deployment template; CUDA images and model caches vary by host.
-Inside Compose, services still bind to `0.0.0.0` on the container network and
-publish host ports. The vLLM service uses `--enforce-eager`, matching
-`serve.sh`.
+## Licensing
 
-## Licensing and brand assets
+Apache License 2.0. Third-party software and models keep their own terms; see
+`THIRD_PARTY_NOTICES.md`.
 
-Code is provided under Apache License 2.0. Third-party software and models
-retain their own terms; see `THIRD_PARTY_NOTICES.md`.
+The X Square name and logo in `dialogue_system/frontend/x-square-logo.png` are
+not licensed under Apache-2.0. Forks and redistributed products should remove
+or replace the logo unless the owner has approved their use. Reasonable
+attribution in this demo is allowed.
 
-The included X Square logo and related brand assets are not granted under the
-Apache License. Their use requires owner approval except for reasonable
-attribution. See `docs/BRAND_ASSETS.md`.
-
-See the repository-level
-[`CONTRIBUTING.md`](../CONTRIBUTING.md) and
-[`SECURITY.md`](../SECURITY.md) before reporting changes or issues.
+See [`CONTRIBUTING.md`](../CONTRIBUTING.md) and [`SECURITY.md`](../SECURITY.md)
+before reporting changes or issues.
