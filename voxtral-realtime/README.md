@@ -3,6 +3,21 @@
 A small, standalone Python bridge for realtime ASR and frame-level turn taking
 with Voxtral served through vLLM's `/v1/realtime` WebSocket API.
 
+Install this package from the X2-Turn checkout. It is not published to PyPI.
+
+## Two inference entry points
+
+Do not confuse these scripts. Both mention offline WAV input, but they do
+different work:
+
+| Script | Needs patched vLLM? | What it does |
+|--------|---------------------|--------------|
+| [`integrations/transformers/examples/offline_inference.py`](integrations/transformers/examples/offline_inference.py) | No | Local Transformers ASR + 80 ms turn frames |
+| [`examples/offline_inference.py`](examples/offline_inference.py) | Yes | Replay a WAV through the production `/turn` controller |
+
+For a single-file transcript without a server, use the Transformers script.
+That is the path shown in the repository-root README.
+
 ## Architecture
 
 ```text
@@ -20,6 +35,8 @@ can barge while the bot is speaking, and endpoint candidates retain a short ASR
 tail before acceptance.
 
 ## Install
+
+Run from the `voxtral-realtime/` directory:
 
 ```bash
 python -m pip install -e .
@@ -62,8 +79,11 @@ export VLLM_URL=ws://127.0.0.1:8011/v1/realtime
 
 ## CLI
 
+The server binds to `127.0.0.1` by default. Pass `--host 0.0.0.0` only when
+another machine must connect.
+
 ```bash
-voxtral-realtime serve --host 0.0.0.0 --port 8000
+voxtral-realtime serve --host 127.0.0.1 --port 8000
 voxtral-realtime serve --model Kaiqfu/X2-Turn-4B-0812 \
   --vllm-url ws://127.0.0.1:8011/v1/realtime
 ```
@@ -75,14 +95,14 @@ record for every consumed turn frame. The trace contains probabilities,
 incremental ASR, acoustic activity, bot state, and controller output, but no raw
 audio. Tracing is disabled by default in the core package.
 
-## Offline WAV example
+## Replay a WAV through the turn bridge
 
 Replay a PCM WAV through the production acoustic gate and turn controller
-without starting the dialogue demo:
+without starting the dialogue demo. Patched vLLM must already be running:
 
 ```bash
 python examples/offline_inference.py \
-  --audio /path/to/input.wav \
+  --audio ../turn-demo/assets/sample_en.wav \
   --output-dir offline_output
 ```
 

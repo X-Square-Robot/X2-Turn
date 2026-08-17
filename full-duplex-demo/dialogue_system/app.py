@@ -697,11 +697,12 @@ if __name__ == "__main__":
         if os.path.isfile(cand_cert) and os.path.isfile(cand_key):
             ssl_cert, ssl_key = cand_cert, cand_key
 
+    bind_host = os.environ.get("DEMO_BIND_HOST", "127.0.0.1")
     scheme = "https" if ssl_cert and ssl_key else "http"
-    logger.info(f"Server starting on {scheme}://0.0.0.0:{Config.PORT}")
+    logger.info(f"Server starting on {scheme}://{bind_host}:{Config.PORT}")
     uvicorn.run(
         app,
-        host="0.0.0.0",
+        host=bind_host,
         port=Config.PORT,
         ssl_certfile=ssl_cert,
         ssl_keyfile=ssl_key,

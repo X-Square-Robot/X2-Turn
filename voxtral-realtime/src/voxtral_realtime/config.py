@@ -14,7 +14,7 @@ DEFAULT_VLLM_URL = "ws://127.0.0.1:8011/v1/realtime"
 class RealtimeConfig:
     model_id: str = DEFAULT_MODEL_ID
     vllm_url: str = DEFAULT_VLLM_URL
-    host: str = "0.0.0.0"
+    host: str = "127.0.0.1"
     port: int = 8000
     sample_rate: int = 16000
     commit_ms: int = 80

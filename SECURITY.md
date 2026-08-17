@@ -13,7 +13,10 @@ mitigations when available.
 The browser demos are development tools. They do not provide production-grade
 authentication, authorization, rate limiting, or durable upload isolation.
 
-- Keep local services bound to `127.0.0.1` unless remote access is required.
+Local defaults bind to `127.0.0.1`. Set `BIND_HOST=0.0.0.0`, `VOXTRAL_HOST`,
+or `--host 0.0.0.0` only when another machine must connect. Docker Compose
+still uses `0.0.0.0` inside the container network and publishes host ports.
+
 - Use authenticated HTTPS termination, trusted certificates, network access
   controls, and request limits for public deployments.
 - Treat uploaded audio, microphone audio, transcripts, and trace files as

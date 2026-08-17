@@ -24,6 +24,8 @@
 
 [English](README.md) | [中文](README_zh.md)
 
+英文 README 是主文档。本页与其章节顺序一致。
+
 ## 项目简介
 
 X2 Turn 在 Voxtral Realtime 基础上提供两个同步输出：流式自动语音识别，
@@ -39,15 +41,6 @@ X2 Turn 在 Voxtral Realtime 基础上提供两个同步输出：流式自动语
 **[X2-Turn: Frame-Synchronous Dual-Head Modeling for Joint Streaming ASR and
 Turn State Prediction](https://arxiv.org/abs/2608.10878)**
 （[PDF](https://arxiv.org/pdf/2608.10878)）。
-
-```bibtex
-@article{fu2026x2turn,
-  title={X2-Turn: Frame-Synchronous Dual-Head Modeling for Joint Streaming ASR and Turn State Prediction},
-  author={Fu, Kaiqi and Wen, Rime and Lin, Altman and Qin, Shawn and Gan, Roy and Wang, Hao and Wang, Qian},
-  journal={arXiv preprint arXiv:2608.10878},
-  year={2026}
-}
-```
 
 ## Demo
 
@@ -94,11 +87,12 @@ MODEL=Kaiqfu/X2-Turn-4B-0812 bash run.sh
 打开 <http://localhost:7860>，选择 **[built-in] English question**，再点击
 **Run scenario**。这样即可用内置合成样本完成一次端到端验证，无需麦克风。
 
-也可以只用 pip（不依赖 Conda）：
+也可以只用 pip（不依赖 Conda）。这些包**没有**发布到 PyPI，请从本仓库安装：
 
 ```bash
-python -m pip install -e "voxtral-realtime[transformers]"
-python -m pip install -e "turn-demo"
+# 在 X2-Turn 仓库根目录执行
+python -m pip install -e "./voxtral-realtime[transformers]"
+python -m pip install -e "./turn-demo"
 cd turn-demo && MODEL=Kaiqfu/X2-Turn-4B-0812 bash run.sh
 ```
 
@@ -106,7 +100,12 @@ cd turn-demo && MODEL=Kaiqfu/X2-Turn-4B-0812 bash run.sh
 [`full-duplex-demo/README.md`](full-duplex-demo/README.md)。
 那条路径会额外引入 patched vLLM、对话应用，以及外部 CosyVoice 环境。
 
-## 快速开始：推理一条音频
+## 本地 Transformers 推理（一条音频）
+
+这条路径**不会**启动 vLLM。它用本地 Transformers 封装写出 ASR 文本和
+80 毫秒 Turn 帧。另一条脚本
+[`voxtral-realtime/examples/offline_inference.py`](voxtral-realtime/examples/README.md)
+会把 WAV 送进生产环境的 turn 控制器，**需要** patched vLLM。
 
 推荐在仓库根目录使用 Miniforge 环境：
 
@@ -115,7 +114,14 @@ conda env create -f environments/environment-transformers.yml
 conda activate x2-turn
 ```
 
-也可以直接安装本地 Transformers 集成：
+也可以从本仓库安装本地 Transformers extra：
+
+```bash
+# 在 X2-Turn 仓库根目录执行
+python -m pip install -e "./voxtral-realtime[transformers]"
+```
+
+或者进入 `voxtral-realtime/`：
 
 ```bash
 cd voxtral-realtime
@@ -179,8 +185,9 @@ FFmpeg 生成命令记录在
 Torch 与 CUDA 依赖冲突。
 
 实时服务请参考
-[`vLLM 集成指南`](voxtral-realtime/integrations/vllm/README.md)。
-标准 vLLM 不会输出自定义的 `turn.delta` 事件。
+[`vLLM 集成指南`](voxtral-realtime/integrations/vllm/README.md)，
+并在 `voxtral-realtime/` 目录下执行其中的命令。标准 vLLM 不会输出自定义的
+`turn.delta` 事件。本地服务默认绑定 `127.0.0.1`。
 
 ## 发布边界
 
@@ -195,6 +202,19 @@ Torch 与 CUDA 依赖冲突。
 
 欢迎参与贡献。提交大型改动前请先阅读 [`CONTRIBUTING.md`](CONTRIBUTING.md)，
 安全问题请按照 [`SECURITY.md`](SECURITY.md) 私下报告。
+
+## Citation
+
+If you find X2-Turn useful in your research, please cite:
+
+```bibtex
+@article{fu2026x2turn,
+  title = {X2-Turn: Frame-Synchronous Dual-Head Modeling for Joint Streaming ASR and Turn State Prediction},
+  author = {Fu, Kaiqi and Wen, Rime and Lin, Altman and Qin, Shawn and Gan, Roy and Wang, Hao and Wang, Qian},
+  journal = {arXiv preprint arXiv:2608.10878},
+  year = {2026},
+}
+```
 
 ## 致谢
 

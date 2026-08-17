@@ -6,13 +6,18 @@ It is a regular PyTorch `nn.Module` wrapper around the unmodified
 `VoxtralRealtimeForConditionalGeneration`, with an independent full-vocabulary
 `vad_lm_head`.
 
-Install the optional dependencies without changing Transformers source code:
+Install the optional dependencies from the `voxtral-realtime/` directory
+without changing Transformers source code. This package is not published to
+PyPI:
 
 ```bash
+# from voxtral-realtime/
 python -m pip install -e ".[transformers]"
 ```
 
 ## Load a local or Hugging Face checkpoint
+
+The audio path in this snippet is relative to the X2-Turn repository root.
 
 ```python
 import torch
@@ -31,7 +36,7 @@ model = load_mtp_checkpoint(
     dtype=torch.bfloat16,
 ).eval()
 
-result = infer_asr_turn(model, processor, "/path/to/input.wav")
+result = infer_asr_turn(model, processor, "turn-demo/assets/sample_en.wav")
 print("ASR:", result.transcript)
 for frame in result.turn_frames:
     print(frame.start_ms, frame.end_ms, frame.label, frame.confidence)
@@ -47,7 +52,8 @@ does not require `trust_remote_code`.
 aligned forward pass over `vad_lm_head`. It returns the transcript, generated
 token ids, and all six-class turn predictions on the 80 ms timeline.
 
-The same loading example is available as a script:
+The same loading example is available as a script. Run from
+`voxtral-realtime/`:
 
 ```bash
 python integrations/transformers/examples/load_checkpoint.py \
@@ -55,12 +61,12 @@ python integrations/transformers/examples/load_checkpoint.py \
 ```
 
 To transcribe one file and print all six-class turn predictions on the 80 ms
-timeline:
+timeline (local Transformers, no vLLM):
 
 ```bash
 python integrations/transformers/examples/offline_inference.py \
-  --model /path/to/X2-Turn-4B-0812 \
-  --audio /path/to/input.wav \
+  --model Kaiqfu/X2-Turn-4B-0812 \
+  --audio ../turn-demo/assets/sample_en.wav \
   --output offline_frames.json
 ```
 
@@ -69,10 +75,11 @@ forward pass through `vad_lm_head`. The second pass is required because stock
 Transformers generation only uses the ASR head. Production realtime inference
 should use the vLLM integration, which emits `turn.delta` incrementally.
 
-Run the CPU-only wrapper tests from this directory in an environment containing
-PyTorch and Transformers:
+Run the CPU-only wrapper tests from `integrations/transformers/` in an
+environment containing PyTorch and Transformers:
 
 ```bash
+# from voxtral-realtime/integrations/transformers/
 python -m pytest -q tests/test_modeling_voxtral_mtp.py
 ```
 

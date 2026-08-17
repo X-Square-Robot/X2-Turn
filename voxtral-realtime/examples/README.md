@@ -1,15 +1,21 @@
-# Offline ASR and turn inference
+# Replay one WAV through the realtime turn bridge
 
-`offline_inference.py` replays one PCM WAV through the same acoustic gate,
-realtime vLLM client, and frame-level turn controller used by the `/turn`
+This is **not** the local Transformers file-level decoder. That script is
+[`../integrations/transformers/examples/offline_inference.py`](../integrations/transformers/examples/offline_inference.py)
+and does not need vLLM.
+
+`examples/offline_inference.py` replays one PCM WAV through the same acoustic
+gate, realtime vLLM client, and frame-level turn controller used by the `/turn`
 service. It does not start the browser demo, LLM, or TTS.
 
 ## Prerequisites
 
-1. Install this package:
+Run every command below from the `voxtral-realtime/` directory.
+
+1. Install this package from the checkout (it is not published to PyPI):
 
    ```bash
-   pip install -e .
+   python -m pip install -e .
    ```
 
 2. Apply the pinned vLLM overlay and convert the canonical checkpoint by
@@ -24,11 +30,10 @@ service. It does not start the browser demo, LLM, or TTS.
 
 ## Run
 
-From the `voxtral-realtime` directory:
-
 ```bash
+# from voxtral-realtime/
 python examples/offline_inference.py \
-  --audio /path/to/input.wav \
+  --audio ../turn-demo/assets/sample_en.wav \
   --output-dir offline_output \
   --model Kaiqfu/X2-Turn-4B-0812 \
   --vllm-url ws://127.0.0.1:8011/v1/realtime

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "x2-turn-demo"
 version = "0.1.0"
-description = "Standalone browser demo for raw X2 Turn predictions"
+description = "Standalone browser demo for raw X2 Turn predictions. Install from the X2-Turn checkout; not published to PyPI."
 readme = "README.md"
 license = {file = "LICENSE"}
 requires-python = ">=3.10"

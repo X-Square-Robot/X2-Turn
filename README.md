@@ -31,6 +31,13 @@ The turn head predicts `idle`, `noidle`, `speaking`, `turn_end`,
 `backchannel`, or `uncertain`. Applications should smooth these frame-level
 predictions instead of treating a single frame as an irreversible action.
 
+## Paper
+
+Model architecture, ASR-anchored supervision, and Chinese/English experiments:
+**[X2-Turn: Frame-Synchronous Dual-Head Modeling for Joint Streaming ASR and
+Turn State Prediction](https://arxiv.org/abs/2608.10878)**
+([PDF](https://arxiv.org/pdf/2608.10878)).
+
 ## Demos
 
 This repository includes two complementary browser demos:
@@ -81,11 +88,13 @@ Open <http://localhost:7860>, choose **[built-in] English question**, then
 click **Run scenario**. That exercises the bundled synthetic sample without a
 microphone.
 
-Pip-only alternative (same packages, no Conda):
+Pip-only alternative (same packages, no Conda). These packages are **not**
+published to PyPI; install from this checkout:
 
 ```bash
-python -m pip install -e "voxtral-realtime[transformers]"
-python -m pip install -e "turn-demo"
+# from the X2-Turn repository root
+python -m pip install -e "./voxtral-realtime[transformers]"
+python -m pip install -e "./turn-demo"
 cd turn-demo && MODEL=Kaiqfu/X2-Turn-4B-0812 bash run.sh
 ```
 
@@ -94,7 +103,13 @@ When you later need a complete conversational stack, follow
 separate environments for patched vLLM, the dialogue app, and an external
 CosyVoice checkout.
 
-## Quick start: one audio file
+## Local Transformers inference (one audio file)
+
+This path does **not** start vLLM. It writes ASR text and 80 ms turn frames
+with the local Transformers wrapper. A different script,
+[`voxtral-realtime/examples/offline_inference.py`](voxtral-realtime/examples/README.md),
+replays a WAV through the production turn controller and **does** need patched
+vLLM.
 
 Recommended Miniforge setup, run from the repository root:
 
@@ -103,7 +118,14 @@ conda env create -f environments/environment-transformers.yml
 conda activate x2-turn
 ```
 
-Or install the local Transformers integration with pip:
+Or install the local Transformers extra from this checkout:
+
+```bash
+# from the X2-Turn repository root
+python -m pip install -e "./voxtral-realtime[transformers]"
+```
+
+Alternatively, from `voxtral-realtime/`:
 
 ```bash
 cd voxtral-realtime
@@ -172,8 +194,24 @@ full-duplex dialogue stack. Keeping these environments separate avoids most
 Torch and CUDA dependency conflicts.
 
 For realtime serving, follow the
-[`vLLM integration guide`](voxtral-realtime/integrations/vllm/README.md).
-Stock vLLM does not emit the custom `turn.delta` events.
+[`vLLM integration guide`](voxtral-realtime/integrations/vllm/README.md)
+from the `voxtral-realtime/` directory. Stock vLLM does not emit the custom
+`turn.delta` events. Local services bind to `127.0.0.1` by default.
+
+## Release boundary
+
+Each component keeps its own license and notice, so they can be published
+separately. Model weights and model metadata are distributed through the
+[Hugging Face model repository](https://huggingface.co/Kaiqfu/X2-Turn-4B-0812),
+not this source tree.
+
+Do not publish local logs, certificates, datasets, external source checkouts,
+or credentials.
+
+## Contributing and security
+
+Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) before large changes. Report
+security issues privately as described in [`SECURITY.md`](SECURITY.md).
 
 ## Citation
 

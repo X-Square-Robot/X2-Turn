@@ -5,9 +5,13 @@ Apache-2.0 vLLM 0.19.1 checkout pinned at commit
 `b1388b1fbf5aaef47937fabe98931211684666a6` and adds the Voxtral MTP turn head
 and realtime event propagation.
 
+Run every command in this file from the `voxtral-realtime/` directory unless a
+snippet says otherwise.
+
 ## Reproduce a source checkout
 
 ```bash
+# from voxtral-realtime/
 git clone https://github.com/vllm-project/vllm.git
 cd vllm && git checkout b1388b1fbf5aaef47937fabe98931211684666a6 && cd ..
 bash scripts/install_vllm_overlay.sh ./vllm
@@ -29,6 +33,7 @@ checkpoint directory. vLLM should load the exported directory, which uses
 Mistral keys in `consolidated.safetensors` and includes `vad_lm_head.weight`.
 
 ```bash
+# from voxtral-realtime/
 python integrations/vllm/tools/export_mtp_for_vllm.py \
   --src /path/to/X2-Turn-4B-0812 \
   --dst /path/to/X2-Turn-4B-0812-vllm \
@@ -41,9 +46,14 @@ exported directory; vLLM uses `params.json` for the required audio
 configuration.
 
 Serve the exported directory while exposing the public model name expected by
-the bridge:
+the bridge. The server binds to `127.0.0.1` by default; set `HOST=0.0.0.0` only
+when another machine must connect.
 
 ```bash
+# from voxtral-realtime/
 MODEL=/path/to/X2-Turn-4B-0812-vllm \
   bash integrations/vllm/examples/voxtral_mtp/serve.sh
 ```
+
+A smoke client is documented in
+[`examples/voxtral_mtp/README.md`](examples/voxtral_mtp/README.md).

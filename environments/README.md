@@ -3,14 +3,17 @@
 Run all commands in this document from the `X2-Turn` repository root. Miniforge is recommended because these files use the `conda-forge`
 channel.
 
+The environment files install local editable packages from this checkout. The
+Python packages are not published to PyPI.
+
 The services intentionally use separate environments. Combining Transformers,
 patched vLLM, CosyVoice, and the dialogue LLM in one environment makes CUDA and
 Torch dependency resolution fragile.
 
-## Offline inference and Turn Demo
+## Local Transformers inference and Turn Demo
 
-This is the default environment for one-file ASR + turn inference and the
-standalone browser demo:
+This is the default environment for one-file ASR + turn inference (no vLLM)
+and the standalone browser demo:
 
 ```bash
 conda env create -f environments/environment-transformers.yml
@@ -18,9 +21,13 @@ conda activate x2-turn
 
 python voxtral-realtime/integrations/transformers/examples/offline_inference.py \
   --model Kaiqfu/X2-Turn-4B-0812 \
-  --audio /path/to/input.wav \
+  --audio turn-demo/assets/sample_en.wav \
   --output offline_frames.json
 ```
+
+To replay a WAV through the production turn controller instead, start patched
+vLLM first and use
+[`../voxtral-realtime/examples/README.md`](../voxtral-realtime/examples/README.md).
 
 The environment installs PyTorch from PyPI through the
 `voxtral-realtime[transformers]` extra. Verify that the resulting Torch build
@@ -35,10 +42,10 @@ conda activate x2-turn-vllm
 
 This environment provides the source-build tools but deliberately does not
 install stock vLLM. Follow the
-[`vLLM overlay guide`](../voxtral-realtime/integrations/vllm/README.md) to check
-out the pinned vLLM commit, apply the X2 Turn overlay, and install the resulting
-checkout. The supplied Dockerfile is the preferred option when host CUDA
-compatibility is uncertain.
+[`vLLM overlay guide`](../voxtral-realtime/integrations/vllm/README.md) from the
+`voxtral-realtime/` directory to check out the pinned vLLM commit, apply the
+X2 Turn overlay, and install the resulting checkout. The supplied Dockerfile is
+the preferred option when host CUDA compatibility is uncertain.
 
 ## Full-duplex dialogue
 
@@ -59,8 +66,12 @@ Example:
 ```bash
 export COSY_PY=/path/to/cosyvoice-env/bin/python
 export VLLM_PY=/path/to/x2-turn-vllm-env/bin/python
+export VOXTRAL_VLLM_MODEL=/path/to/X2-Turn-4B-0812-vllm
 bash full-duplex-demo/start_demo.sh
 ```
+
+Local services bind to `127.0.0.1` by default. Set `BIND_HOST=0.0.0.0` only
+when another machine must connect.
 
 ## Recreating environments
 

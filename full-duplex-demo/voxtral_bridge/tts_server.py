@@ -150,7 +150,7 @@ async def tts_stream(request: Request):
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument("--host", default="0.0.0.0")
+    p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=6016)
     return p.parse_args()
 

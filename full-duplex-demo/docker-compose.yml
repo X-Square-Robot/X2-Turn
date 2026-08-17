@@ -25,10 +25,11 @@ services:
       - "8011"
       - --tokenizer-mode
       - mistral
+      - --enforce-eager
     ports: ["8011:8011"]
     gpus:
       - driver: nvidia
-        device_ids: ["${VAD_GPU:-0}"]
+        device_ids: ["${TURN_GPU:-${VAD_GPU:-0}}"]
         capabilities: [gpu]
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8011/health"]

@@ -13,11 +13,11 @@ The six model outputs are `idle`, `noidle`, `speaking`, `turn_end`,
 
 ## Install
 
-From the `X2-Turn` repository root:
+These packages are not published to PyPI. From the `X2-Turn` repository root:
 
 ```bash
-python -m pip install -e "voxtral-realtime[transformers]"
-python -m pip install -e "turn-demo[dev]"
+python -m pip install -e "./voxtral-realtime[transformers]"
+python -m pip install -e "./turn-demo[dev]"
 ```
 
 Alternatively, create the shared Miniforge environment from the monorepo root:

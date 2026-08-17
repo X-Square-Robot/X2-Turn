@@ -22,8 +22,12 @@ Service boundaries:
 - `:8011`: vLLM Realtime service with the MTP overlay.
 - `:8000`: `voxtral-realtime` turn bridge.
 - `:6007`: replaceable streaming LLM service.
-- `:6017`: CosyVoice TTS; the Edge-TTS fallback uses `:6016` by default.
+- `:6017`: CosyVoice TTS. Edge-TTS uses `:6016` when `TTS_BACKEND=edge` and
+  `TTS_PORT` is unset. Copying `.env.example` sets `TTS_PORT=6017` for both.
 - `:8443`: FastAPI WebSocket and static frontend.
+
+Local `start_demo.sh` binds these services to `127.0.0.1` unless `BIND_HOST` is
+overridden. Compose publishes the same ports from container `0.0.0.0`.
 
 The demo owns only application orchestration and adapters. ASR/turn inference,
 the acoustic gate, and the frame controller belong to the separate

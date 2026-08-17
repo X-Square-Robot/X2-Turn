@@ -22,7 +22,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--model",
         default="Kaiqfu/X2-Turn-4B-0812",
-        help="Hugging Face model ID or local final/ directory",
+        help="Hugging Face model ID or local checkpoint directory",
     )
     parser.add_argument(
         "--device",

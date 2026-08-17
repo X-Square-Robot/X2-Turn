@@ -190,7 +190,7 @@ async def tts(request: Request):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--host", default="0.0.0.0")
+    parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=6017)
     parser.add_argument(
         "--model-dir",

@@ -18,7 +18,7 @@ Browser (HTTPS :8443)
        │    └─ voxtral-realtime bridge
        │         └─ patched vLLM realtime :8011
        ├─ Streaming LLM HTTP :6007
-       └─ Streaming TTS HTTP :6017
+       └─ Streaming TTS HTTP :6017 (CosyVoice) or :6016 (Edge-TTS default)
 ```
 
 Detailed design:
@@ -33,17 +33,19 @@ Detailed design:
 
 - Linux, Python 3.10+, `curl`, and `openssl`
 - NVIDIA GPUs and compatible CUDA libraries for the default model stack
-- The standalone `voxtral-realtime>=0.1.0` Python package and CLI
+- The local `voxtral-realtime` package and CLI from this checkout (not PyPI)
 - An external [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) checkout
   when using the default TTS backend
 
-Install the core demo and the components needed on each service environment:
+Install from the `X2-Turn` repository. The Python packages here are not
+published to PyPI:
 
 ```bash
+# from X2-Turn/full-duplex-demo/
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -e ../voxtral-realtime
-pip install -e '.[demo,llm]'
+python -m pip install -e ../voxtral-realtime
+python -m pip install -e '.[demo,llm]'
 
 # In the separate environment used for CosyVoice:
 pip install -e '.[tts]'
@@ -65,11 +67,14 @@ Defaults are public model IDs and may be replaced with local paths:
 - LLM: `Qwen/Qwen2.5-3B-Instruct`
 - TTS: `FunAudioLLM/CosyVoice2-0.5B`
 
-Copy the environment template and point `COSY_ROOT` at the external checkout:
+Copy the environment template, set `COSY_ROOT`, and set `VOXTRAL_VLLM_MODEL`
+to the **exported vLLM directory** (not the Hugging Face model ID):
 
 ```bash
+# from full-duplex-demo/
 cp .env.example .env
 # edit COSY_ROOT=/absolute/path/to/CosyVoice
+# edit VOXTRAL_VLLM_MODEL=/absolute/path/to/X2-Turn-4B-0812-vllm
 ```
 
 `VOXTRAL_MODEL`, `LLM_MODEL`, and `COSY_MODEL` accept either hub IDs or model
@@ -77,16 +82,26 @@ directories. Review every model's license and access requirements separately.
 
 The Model Hub repository contains the canonical Hugging Face checkpoint. The
 patched vLLM runtime requires a separately exported vLLM directory. Follow
-`../voxtral-realtime/integrations/vllm/README.md` to apply the pinned vLLM
-overlay and export the weights, then set:
+[`../voxtral-realtime/integrations/vllm/README.md`](../voxtral-realtime/integrations/vllm/README.md)
+from the `voxtral-realtime/` directory to apply the pinned overlay and export
+the weights, then set:
 
 ```bash
 VOXTRAL_VLLM_MODEL=/path/to/X2-Turn-4B-0812-vllm
 ```
 
+`start_demo.sh` refuses to launch vLLM unless that path is a directory
+containing `consolidated.safetensors`. A healthy existing vLLM on `:8011` is
+reused.
+
 ## Quickstart
 
+Local services bind to `127.0.0.1` by default. Set `BIND_HOST=0.0.0.0` only
+when another machine must connect. The GPU for patched vLLM is `TURN_GPU`
+(`VAD_GPU` remains a legacy alias).
+
 ```bash
+# from full-duplex-demo/, after editing .env
 bash start_demo.sh
 ```
 
@@ -131,7 +146,18 @@ private and upload it to Turn Demo only when comparing the simplified and
 production policies.
 
 Set `TTS_BACKEND=edge` to use the lightweight Edge TTS fallback without
-`COSY_ROOT`.
+`COSY_ROOT`. Edge-TTS then listens on `:6016` unless `TTS_PORT` is set.
+Copying `.env.example` sets `TTS_PORT=6017`, which applies to both backends.
+
+## Offline inference
+
+The demo does not bundle evaluation datasets or a second offline dialogue
+pipeline.
+
+- Local Transformers (no vLLM):
+  [`../voxtral-realtime/integrations/transformers/README.md`](../voxtral-realtime/integrations/transformers/README.md)
+- Replay a WAV through the production turn bridge (requires patched vLLM):
+  [`../voxtral-realtime/examples/README.md`](../voxtral-realtime/examples/README.md)
 
 ## Containers
 
@@ -145,13 +171,9 @@ COSY_ROOT=/path/to/CosyVoice docker compose --profile cosyvoice up
 ```
 
 Compose is a deployment template; CUDA images and model caches vary by host.
-
-## Offline inference
-
-The demo does not bundle evaluation datasets or a second offline dialogue
-pipeline. For a standalone PCM WAV example that produces ASR and turn-state
-JSON, use
-[`../voxtral-realtime/examples/README.md`](../voxtral-realtime/examples/README.md).
+Inside Compose, services still bind to `0.0.0.0` on the container network and
+publish host ports. The vLLM service uses `--enforce-eager`, matching
+`serve.sh`.
 
 ## Licensing and brand assets
 

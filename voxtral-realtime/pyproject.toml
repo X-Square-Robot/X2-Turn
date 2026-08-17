@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "voxtral-realtime"
 version = "0.1.0"
-description = "A standalone realtime turn-taking bridge for Voxtral served by vLLM"
+description = "A standalone realtime turn-taking bridge for Voxtral served by vLLM. Install from the X2-Turn checkout; not published to PyPI."
 readme = "README.md"
 license = {file = "LICENSE"}
 requires-python = ">=3.10"
