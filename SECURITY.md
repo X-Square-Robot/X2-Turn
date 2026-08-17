@@ -1,9 +1,8 @@
 # Security policy
 
-Please report suspected vulnerabilities privately to the repository maintainers
-or the security contact published by the hosting organization. Do not include
-credentials, private audio, model tokens, personal data, or exploit details in
-a public issue.
+Please report suspected vulnerabilities privately to [kaiqifu@x2robot.com](mailto:kaiqifu@x2robot.com).
+Do not include credentials, private audio, model tokens, personal data, or
+exploit details in a public issue.
 
 Only the latest revision of the default branch is supported. Reports should
 include affected components, reproduction steps, impact, and suggested
