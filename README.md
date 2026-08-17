@@ -10,7 +10,7 @@
     X2-Turn
   </h1>
   <p>
-    <strong>Frame-synchronous streaming ASR and Turn-state prediction</strong>
+    <strong>Frame-synchronous streaming ASR and turn-state prediction</strong>
   </p>
   <p>
     <a href="https://huggingface.co/Kaiqfu/X2-Turn-4B-0812"><img src="https://img.shields.io/badge/Hugging%20Face-X2--Turn--4B--0812-yellow" alt="Hugging Face model"></a>
@@ -30,13 +30,6 @@ automatic speech recognition and one turn-taking prediction every 80 ms.
 The turn head predicts `idle`, `noidle`, `speaking`, `turn_end`,
 `backchannel`, or `uncertain`. Applications should smooth these frame-level
 predictions instead of treating a single frame as an irreversible action.
-
-## Paper
-
-Model architecture, ASR-anchored supervision, and Chinese/English experiments:
-**[X2-Turn: Frame-Synchronous Dual-Head Modeling for Joint Streaming ASR and
-Turn State Prediction](https://arxiv.org/abs/2608.10878)**
-([PDF](https://arxiv.org/pdf/2608.10878)).
 
 ## Demos
 
@@ -70,7 +63,7 @@ https://github.com/user-attachments/assets/4d322e97-b1ce-4e2e-ac35-d8089d965565
 ## Minimal path: Turn Demo (~5 minutes)
 
 If you only want to inspect ASR + Turn states, skip the full-duplex stack.
-You do **not** need CosyVoice, an LLM, or patched vLLM for this path.
+This path does **not** need CosyVoice, an LLM, or patched vLLM.
 
 **Requirements:** Python 3.10+, a CUDA GPU for the 4B checkpoint, and network
 access to download `Kaiqfu/X2-Turn-4B-0812`.
@@ -85,11 +78,10 @@ MODEL=Kaiqfu/X2-Turn-4B-0812 bash run.sh
 ```
 
 Open <http://localhost:7860>, choose **[built-in] English question**, then
-click **Run scenario**. That exercises the bundled synthetic sample without a
+click **Run scenario**. That runs the bundled synthetic sample without a
 microphone.
 
-Pip-only alternative (same packages, no Conda). These packages are **not**
-published to PyPI; install from this checkout:
+These packages are **not** on PyPI. A pip-only install from this checkout:
 
 ```bash
 # from the X2-Turn repository root
@@ -98,43 +90,41 @@ python -m pip install -e "./turn-demo"
 cd turn-demo && MODEL=Kaiqfu/X2-Turn-4B-0812 bash run.sh
 ```
 
-When you later need a complete conversational stack, follow
-[`full-duplex-demo/README.md`](full-duplex-demo/README.md). That path adds
-separate environments for patched vLLM, the dialogue app, and an external
-CosyVoice checkout.
+For a complete conversational stack, follow
+[`full-duplex-demo/README.md`](full-duplex-demo/README.md). That setup adds
+patched vLLM, the dialogue app, and an external CosyVoice checkout.
 
-## Local Transformers inference (one audio file)
+## Quick start: local Transformers inference
 
-This path does **not** start vLLM. It writes ASR text and 80 ms turn frames
-with the local Transformers wrapper. A different script,
+This path does **not** start vLLM. It returns a transcript and 80 ms turn
+frames through the local Transformers wrapper. To replay a WAV through the
+production turn controller instead, use
 [`voxtral-realtime/examples/offline_inference.py`](voxtral-realtime/examples/README.md),
-replays a WAV through the production turn controller and **does** need patched
-vLLM.
+which **does** require patched vLLM.
 
-Recommended Miniforge setup, run from the repository root:
+Recommended Miniforge setup, from the repository root:
 
 ```bash
 conda env create -f environments/environment-transformers.yml
 conda activate x2-turn
 ```
 
-Or install the local Transformers extra from this checkout:
+Or install the Transformers extra from this checkout:
 
 ```bash
 # from the X2-Turn repository root
 python -m pip install -e "./voxtral-realtime[transformers]"
 ```
 
-Alternatively, from `voxtral-realtime/`:
+The same extra from `voxtral-realtime/`:
 
 ```bash
 cd voxtral-realtime
 python -m pip install -e ".[transformers]"
 ```
 
-Load the model without modifying Transformers or enabling
-`trust_remote_code`, then obtain both the transcript and all aligned turn
-frames:
+Load the model without modifying Transformers or setting
+`trust_remote_code`. The audio path below is relative to the repository root:
 
 ```python
 import torch
@@ -161,9 +151,9 @@ for frame in result.turn_frames:
 ```
 
 The published Hub model is `Kaiqfu/X2-Turn-4B-0812`. For offline or private
-deployments, `model_id` can instead be a local checkpoint directory.
+deployments, `model_id` can be a local checkpoint directory.
 
-For a ready-to-run command that also writes JSON:
+Write the same result to JSON:
 
 ```bash
 python voxtral-realtime/integrations/transformers/examples/offline_inference.py \
@@ -172,8 +162,8 @@ python voxtral-realtime/integrations/transformers/examples/offline_inference.py 
   --output offline_frames.json
 ```
 
-The bundled sample is synthetic 16 kHz mono speech. Its text, provenance,
-license, and reproducible FFmpeg command are documented in
+The bundled sample is synthetic 16 kHz mono speech. Text, provenance, license,
+and a reproducible FFmpeg command are in
 [`turn-demo/assets/README.md`](turn-demo/assets/README.md).
 
 ## Repository layout
@@ -207,11 +197,6 @@ not this source tree.
 
 Do not publish local logs, certificates, datasets, external source checkouts,
 or credentials.
-
-## Contributing and security
-
-Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) before large changes. Report
-security issues privately as described in [`SECURITY.md`](SECURITY.md).
 
 ## Citation
 

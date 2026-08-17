@@ -12,9 +12,6 @@
     <strong>帧同步流式 ASR 与话轮状态预测</strong>
   </p>
   <p>
-    一个基于 Voxtral 的模型、两个同步输出，每 80 毫秒预测一次话轮状态。
-  </p>
-  <p>
     <a href="https://huggingface.co/Kaiqfu/X2-Turn-4B-0812"><img src="https://img.shields.io/badge/Hugging%20Face-X2--Turn--4B--0812-yellow" alt="Hugging Face 模型"></a>
     <a href="https://arxiv.org/abs/2608.10878"><img src="https://img.shields.io/badge/arXiv-2608.10878-b31b1b" alt="X2-Turn 论文"></a>
     <img src="https://img.shields.io/badge/Python-3.10%2B-blue" alt="Python 3.10+">
@@ -23,8 +20,6 @@
 </div>
 
 [English](README.md) | [中文](README_zh.md)
-
-英文 README 是主文档。本页与其章节顺序一致。
 
 ## 项目简介
 
@@ -35,13 +30,6 @@ X2 Turn 在 Voxtral Realtime 基础上提供两个同步输出：流式自动语
 `backchannel` 或 `uncertain`。应用侧应对帧级结果进行平滑处理，
 不要将单帧预测直接视为不可撤销的动作。
 
-## 论文
-
-模型架构、ASR 锚定监督方法和中英文实验详见：
-**[X2-Turn: Frame-Synchronous Dual-Head Modeling for Joint Streaming ASR and
-Turn State Prediction](https://arxiv.org/abs/2608.10878)**
-（[PDF](https://arxiv.org/pdf/2608.10878)）。
-
 ## Demo
 
 仓库提供两个定位互补的浏览器 Demo：
@@ -51,8 +39,7 @@ Turn State Prediction](https://arxiv.org/abs/2608.10878)**
 - **[全双工对话 Demo](full-duplex-demo/README.md)**：将 X2 Turn 与可选的 LLM、
   TTS 服务组合起来，展示低延迟接话、附和以及语音播放期间的用户打断。
 
-如果需要评估模型本身，请先使用 Turn Demo；如果需要验证完整对话系统，
-请使用全双工对话 Demo。
+评估模型本身请先用 Turn Demo；验证完整对话系统请用全双工 Demo。
 
 ### Turn Demo 视频
 
@@ -87,7 +74,7 @@ MODEL=Kaiqfu/X2-Turn-4B-0812 bash run.sh
 打开 <http://localhost:7860>，选择 **[built-in] English question**，再点击
 **Run scenario**。这样即可用内置合成样本完成一次端到端验证，无需麦克风。
 
-也可以只用 pip（不依赖 Conda）。这些包**没有**发布到 PyPI，请从本仓库安装：
+这些包**没有**发布到 PyPI。也可以只用 pip 从本仓库安装：
 
 ```bash
 # 在 X2-Turn 仓库根目录执行
@@ -96,40 +83,40 @@ python -m pip install -e "./turn-demo"
 cd turn-demo && MODEL=Kaiqfu/X2-Turn-4B-0812 bash run.sh
 ```
 
-如果后续需要完整对话系统，请看
+完整对话系统请看
 [`full-duplex-demo/README.md`](full-duplex-demo/README.md)。
 那条路径会额外引入 patched vLLM、对话应用，以及外部 CosyVoice 环境。
 
-## 本地 Transformers 推理（一条音频）
+## 快速开始：本地 Transformers 推理
 
-这条路径**不会**启动 vLLM。它用本地 Transformers 封装写出 ASR 文本和
-80 毫秒 Turn 帧。另一条脚本
-[`voxtral-realtime/examples/offline_inference.py`](voxtral-realtime/examples/README.md)
-会把 WAV 送进生产环境的 turn 控制器，**需要** patched vLLM。
+这条路径**不会**启动 vLLM。它通过本地 Transformers 封装返回转写文本和
+80 毫秒 Turn 帧。若要把 WAV 送进生产环境的 turn 控制器，请用
+[`voxtral-realtime/examples/offline_inference.py`](voxtral-realtime/examples/README.md)，
+那条路径**需要** patched vLLM。
 
-推荐在仓库根目录使用 Miniforge 环境：
+推荐在仓库根目录使用 Miniforge：
 
 ```bash
 conda env create -f environments/environment-transformers.yml
 conda activate x2-turn
 ```
 
-也可以从本仓库安装本地 Transformers extra：
+也可以从本仓库安装 Transformers extra：
 
 ```bash
 # 在 X2-Turn 仓库根目录执行
 python -m pip install -e "./voxtral-realtime[transformers]"
 ```
 
-或者进入 `voxtral-realtime/`：
+在 `voxtral-realtime/` 下安装同一 extra：
 
 ```bash
 cd voxtral-realtime
 python -m pip install -e ".[transformers]"
 ```
 
-无需修改 Transformers，也无需启用 `trust_remote_code`，即可同时获得
-ASR 文本和对齐后的全部话轮帧：
+无需修改 Transformers，也无需设置 `trust_remote_code`。下面的音频路径相对
+仓库根目录：
 
 ```python
 import torch
@@ -158,7 +145,7 @@ for frame in result.turn_frames:
 已发布的 Hub 模型为 `Kaiqfu/X2-Turn-4B-0812`。离线或私有部署时，
 `model_id` 也可以指向本地 checkpoint 目录。
 
-下面的命令可以直接运行推理并写出 JSON：
+把同样的结果写成 JSON：
 
 ```bash
 python voxtral-realtime/integrations/transformers/examples/offline_inference.py \
@@ -168,7 +155,7 @@ python voxtral-realtime/integrations/transformers/examples/offline_inference.py 
 ```
 
 仓库内置一条合成的 16 kHz 单声道音频。文本、来源、许可证及可复现的
-FFmpeg 生成命令记录在
+FFmpeg 生成命令见
 [`turn-demo/assets/README.md`](turn-demo/assets/README.md)。
 
 ## 仓库结构
@@ -198,14 +185,9 @@ Torch 与 CUDA 依赖冲突。
 
 禁止发布本地日志、证书、数据集、外部源码目录或任何凭据。
 
-## 贡献与安全
+## 引用
 
-欢迎参与贡献。提交大型改动前请先阅读 [`CONTRIBUTING.md`](CONTRIBUTING.md)，
-安全问题请按照 [`SECURITY.md`](SECURITY.md) 私下报告。
-
-## Citation
-
-If you find X2-Turn useful in your research, please cite:
+如果这项工作对你的研究有帮助，请引用：
 
 ```bibtex
 @article{fu2026x2turn,
