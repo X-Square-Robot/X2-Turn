@@ -171,7 +171,7 @@ python voxtral-realtime/integrations/transformers/examples/offline_inference.py 
 安装：patched vLLM、对话应用，通常还要一个外部 CosyVoice 环境。请从
 [`full-duplex-demo/README.md`](full-duplex-demo/README.md) 开始。
 
-https://github.com/user-attachments/assets/4d322e97-b1ce-4e2e-ac35-d8089d965565
+https://github.com/user-attachments/assets/3e01f699-3dc1-4bcd-89e1-2cff981cbe90
 
 ### 用 vLLM 做实时服务
 
