@@ -177,7 +177,7 @@ It is a separate setup: patched vLLM, the dialogue app, and usually an
 external CosyVoice checkout. Start from
 [`full-duplex-demo/README.md`](full-duplex-demo/README.md).
 
-https://github.com/user-attachments/assets/4d322e97-b1ce-4e2e-ac35-d8089d965565
+https://github.com/user-attachments/assets/3e01f699-3dc1-4bcd-89e1-2cff981cbe90
 
 ### Realtime serving with vLLM
 
