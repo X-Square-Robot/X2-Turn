@@ -33,7 +33,7 @@ https://github.com/user-attachments/assets/4040eb7a-4f5b-4e25-8ff4-893caeeb0702
 
 ## 🔥 动态
 
-- **[2026-08-20]** 发布 [论文](https://arxiv.org/abs/2608.10878)、代码、4B 模型与 Turn Demo。
+- **[2026-08-20]** 发布 [论文](https://arxiv.org/abs/2608.10878)、代码、X2-Turn-4B 与 Turn Demo。
 
 ## 快速开始
 
