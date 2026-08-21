@@ -31,6 +31,10 @@ X2 Turn 会转写语音，并每隔 80 毫秒预测一个话轮状态：`idle`�
 
 https://github.com/user-attachments/assets/4040eb7a-4f5b-4e25-8ff4-893caeeb0702
 
+## 动态
+
+- **[2026-08-20]** 论文发布于 [arXiv](https://arxiv.org/abs/2608.10878)。代码、4B 模型与 Turn Demo 同步开源。
+
 ## 快速开始
 
 只走下面这一条路。等 Demo 跑出文末的期望结果后，再看 vLLM、全双工栈和

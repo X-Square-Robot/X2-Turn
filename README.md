@@ -32,6 +32,10 @@ and the 4B weights. It does **not** need an LLM, TTS, or vLLM.
 
 https://github.com/user-attachments/assets/4040eb7a-4f5b-4e25-8ff4-893caeeb0702
 
+## News
+
+- **[2026-08-20]** Paper on [arXiv](https://arxiv.org/abs/2608.10878). Code, the 4B model, and the Turn Demo are open.
+
 ## Quick start
 
 Follow this path only. Save vLLM, the full-duplex stack, and the Python API
