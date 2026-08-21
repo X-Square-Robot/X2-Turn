@@ -32,6 +32,10 @@ and the 4B weights. It does **not** need an LLM, TTS, or vLLM.
 
 https://github.com/user-attachments/assets/4040eb7a-4f5b-4e25-8ff4-893caeeb0702
 
+## 🔥 News
+
+- **[2026-08-20]** We release the [paper](https://arxiv.org/abs/2608.10878), code, X2-Turn-4B, and the Turn Demo.
+
 ## Quick start
 
 Follow this path only. Save vLLM, the full-duplex stack, and the Python API
