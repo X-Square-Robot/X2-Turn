@@ -34,7 +34,7 @@ https://github.com/user-attachments/assets/4040eb7a-4f5b-4e25-8ff4-893caeeb0702
 
 ## 🔥 News
 
-- **[2026-08-28]** We release [X2-ASR-4B-0812](https://huggingface.co/x-square-robot/X2-ASR-4B-0812), the Stage 1 bilingual streaming ASR backbone (no turn head). Results cover AISHELL-1/2/3/4, WenetSpeech, LibriSpeech, GigaSpeech, TED-LIUM, and VoxPopuli at τ = 480 / 960 / 2400 ms (average CER 6.71 / 5.87 / 5.54 on Chinese; average WER 10.37 / 8.87 / 8.50 on English). Per-set tables are on the [model card](https://huggingface.co/x-square-robot/X2-ASR-4B-0812). The Turn Demo still uses [X2-Turn-4B-0812](https://huggingface.co/x-square-robot/X2-Turn-4B-0812).
+- **[2026-08-28]** We release [X2-ASR-4B-0812](https://huggingface.co/x-square-robot/X2-ASR-4B-0812), the Stage 1 bilingual streaming ASR backbone (no turn head).
 - **[2026-08-20]** We release the [paper](https://arxiv.org/abs/2608.10878), code, X2-Turn-4B, and the Turn Demo.
 
 ## Quick start
