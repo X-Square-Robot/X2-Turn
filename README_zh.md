@@ -31,6 +31,11 @@ X2 Turn 会转写语音，并每隔 80 毫秒预测一个话轮状态：`idle`�
 
 https://github.com/user-attachments/assets/4040eb7a-4f5b-4e25-8ff4-893caeeb0702
 
+## 🔥 动态
+
+- **[2026-08-28]** 开源 Stage 1 中英流式 ASR 权重 [X2-ASR-4B-0812](https://huggingface.co/x-square-robot/X2-ASR-4B-0812)（无 turn 头）。评测覆盖 AISHELL-1/2/3/4、WenetSpeech、LibriSpeech、GigaSpeech、TED-LIUM 和 VoxPopuli，并给出 τ = 480 / 960 / 2400 ms 的结果（中文平均 CER 6.71 / 5.87 / 5.54，英文平均 WER 10.37 / 8.87 / 8.50）。分测试集表格见 [模型卡片](https://huggingface.co/x-square-robot/X2-ASR-4B-0812)。Turn Demo 仍使用 [X2-Turn-4B-0812](https://huggingface.co/x-square-robot/X2-Turn-4B-0812)。
+- **[2026-08-20]** 发布[论文](https://arxiv.org/abs/2608.10878)、代码、X2-Turn-4B 与 Turn Demo。
+
 ## 快速开始
 
 只走下面这一条路。等 Demo 跑出文末的期望结果后，再看 vLLM、全双工栈和
