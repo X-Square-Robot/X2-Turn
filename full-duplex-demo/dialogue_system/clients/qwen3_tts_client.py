@@ -68,11 +68,11 @@ class Qwen3TurnSession:
         self._session.end()
 
     def cancel(self, reason: str = "barge_in") -> None:
-        if self._send_closed:
-            return
         self._send_closed = True
         try:
-            self._session.cancel(reason=reason)
+            # close() is intentionally stronger than cancel(): it also
+            # terminates a stream whose text input was already ended.
+            self._session.close(reason=reason)
         except Exception:
             pass
 
@@ -115,7 +115,7 @@ class Qwen3TTSClient:
     def __init__(self, speaker: str | None = None, ws_url: str | None = None):
         self.speaker = speaker or os.environ.get("QWEN3_TTS_SPEAKER", "serena")
         self.ws_url = ws_url or os.environ.get(
-            "QWEN3_TTS_WS_URL", "ws://127.0.0.1:50053/v1/ws"
+            "QWEN3_TTS_WS_URL", "ws://127.0.0.1:50052/v1/ws"
         )
         self._client = TTSClient.connect(
             self.ws_url,
@@ -136,6 +136,18 @@ class Qwen3TTSClient:
                 if self._warm is not None:
                     break
             time.sleep(0.02)
+        with self._lock:
+            ready = self._warm is not None
+        if not ready:
+            # Fail application startup instead of reporting success with an
+            # unreachable endpoint, incompatible task, or unknown speaker.
+            session = Qwen3TurnSession(self._client, self.speaker)
+            with self._lock:
+                if self._warm is None:
+                    self._warm = session
+                    session = None
+            if session is not None:
+                session.cancel("duplicate prewarm")
 
     def _spawn_warm(self) -> None:
         def create() -> None:

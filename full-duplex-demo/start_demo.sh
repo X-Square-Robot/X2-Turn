@@ -52,9 +52,10 @@ fi
 # GPU assignment (override freely). TURN_GPU is preferred; VAD_GPU is a legacy alias.
 TURN_GPU="${TURN_GPU:-${VAD_GPU:-0}}"
 LLM_GPU="${LLM_GPU:-2}"
-QWEN3_TTS_WS_URL="${QWEN3_TTS_WS_URL:-ws://127.0.0.1:50053/v1/ws}"
-QWEN3_TTS_HEALTH_URL="${QWEN3_TTS_HEALTH_URL:-http://127.0.0.1:50053/v1/capabilities}"
+QWEN3_TTS_WS_URL="${QWEN3_TTS_WS_URL:-ws://127.0.0.1:50052/v1/ws}"
+QWEN3_TTS_HEALTH_URL="${QWEN3_TTS_HEALTH_URL:-http://127.0.0.1:50052/v1/capabilities}"
 QWEN3_TTS_SPEAKER="${QWEN3_TTS_SPEAKER:-serena}"
+LLM_TOKEN_STREAM="${LLM_TOKEN_STREAM:-1}"
 
 # Browsers permit microphone access on localhost; use a real certificate when
 # exposing the demo on another host.
@@ -103,6 +104,12 @@ require_command() {
 
 require_value VOXTRAL_MODEL "$VOXTRAL_MODEL"
 require_command "$PY"
+if ! PYTHONPATH="${QWEN3TTS_CLIENT_SRC:-}${PYTHONPATH:+:$PYTHONPATH}" \
+    "$PY" -c "import qwen3tts" >/dev/null 2>&1; then
+  echo "ERROR: qwen3tts SDK is unavailable." >&2
+  echo "Install it or set QWEN3TTS_CLIENT_SRC to Qwen3TTS-Streaming/client/src." >&2
+  exit 2
+fi
 
 echo "==== Dialogue Demo ===="
 echo "ROOT         : $ROOT"
@@ -123,7 +130,7 @@ export PYTHONUNBUFFERED=1
 # Timed health probe.
 health_ok() {
   local url="$1"
-  curl -sf --connect-timeout 1 --max-time 2 "$url" >/dev/null 2>&1
+  curl -ksf --connect-timeout 1 --max-time 2 "$url" >/dev/null 2>&1
 }
 
 port_open() {
@@ -134,6 +141,16 @@ port_open() {
 if ! health_ok "$QWEN3_TTS_HEALTH_URL"; then
   echo "ERROR: local Qwen3TTS-Streaming is not ready: $QWEN3_TTS_WS_URL" >&2
   echo "Start the local engine first, then rerun this launcher." >&2
+  exit 2
+fi
+if ! curl -ksf --connect-timeout 1 --max-time 3 "$QWEN3_TTS_HEALTH_URL" \
+    | "$PY" -c '
+import json, sys
+caps = json.load(sys.stdin)
+assert str(caps.get("protocol_version", "")).startswith("tts-session-")
+assert "custom_voice" in caps.get("declared_supported_task_types", [])
+'; then
+  echo "ERROR: Qwen3TTS endpoint lacks the required custom_voice protocol." >&2
   exit 2
 fi
 echo "[1/4] TTS  $QWEN3_TTS_WS_URL (local Qwen3TTS-Streaming)"
@@ -153,7 +170,7 @@ if health_ok "http://127.0.0.1:$VLLM_PORT/health" || port_open "$VLLM_PORT"; the
 else
   require_command "$VLLM_PY"
   require_value VOXTRAL_VLLM_MODEL "${VOXTRAL_VLLM_MODEL:-}"
-  if [[ ! -d "$VOXTRAL_VLLM_MODEL" ]]; then
+  if [[ ! -f "$VOXTRAL_VLLM_MODEL/consolidated.safetensors" ]]; then
     echo "ERROR: VOXTRAL_VLLM_MODEL must be an exported vLLM directory containing consolidated.safetensors." >&2
     echo "Do not pass the Hugging Face model ID. See ../voxtral-realtime/integrations/vllm/README.md" >&2
     exit 2
@@ -212,7 +229,25 @@ export DEMO_BIND_HOST="$BIND_HOST"
 nohup "$PY" app.py >"$LOG_DIR/app.log" 2>&1 &
 echo $! >"$LOG_DIR/app.pid"
 
-sleep 3
+app_ready=0
+for _ in $(seq 1 30); do
+  if ! kill -0 "$(cat "$LOG_DIR/app.pid")" 2>/dev/null; then
+    echo "ERROR: dialogue app exited during startup." >&2
+    tail -40 "$LOG_DIR/app.log" >&2 || true
+    exit 1
+  fi
+  if health_ok "https://127.0.0.1:$DEMO_PORT/"; then
+    app_ready=1
+    break
+  fi
+  sleep 1
+done
+if [[ "$app_ready" != "1" ]]; then
+  echo "ERROR: dialogue app did not become ready." >&2
+  stop_pid app "$LOG_DIR/app.pid"
+  tail -40 "$LOG_DIR/app.log" >&2 || true
+  exit 1
+fi
 echo
 echo "Done. Open:  https://$DEMO_PUBLIC_HOST:$DEMO_PORT"
 echo "             (browser will warn on self-signed cert — click Advanced → Proceed)"

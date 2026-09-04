@@ -26,6 +26,10 @@ services:
       - --tokenizer-mode
       - mistral
       - --enforce-eager
+    volumes:
+      - .:/app
+      - ${HF_HOME:-${HOME}/.cache/huggingface}:/root/.cache/huggingface
+      - ${VOXTRAL_VLLM_MODEL:-./models/X2-Turn-4B-0812-vllm}:/models/X2-Turn-4B-0812-vllm:ro
     ports: ["8011:8011"]
     gpus:
       - driver: nvidia
@@ -46,6 +50,8 @@ services:
       - ws://voxtral:8011/v1/realtime
       - --model
       - ${VOXTRAL_MODEL:-x-square-robot/X2-Turn-4B-0812}
+      - --host
+      - 0.0.0.0
     ports: ["8000:8000"]
     depends_on:
       voxtral:
@@ -58,7 +64,7 @@ services:
 
   llm:
     <<: *demo
-    command: ["python3", "voxtral_bridge/llm_server.py", "--model_dir", "${LLM_MODEL:-Qwen/Qwen2.5-3B-Instruct}"]
+    command: ["python3", "voxtral_bridge/llm_server.py", "--model_dir", "${LLM_MODEL:-Qwen/Qwen2.5-3B-Instruct}", "--host", "0.0.0.0"]
     ports: ["6007:6007"]
     gpus:
       - driver: nvidia
@@ -73,11 +79,17 @@ services:
   app:
     <<: *demo
     command: ["bash", "scripts/run_app.sh"]
+    volumes:
+      - .:/app
+      - ${HF_HOME:-${HOME}/.cache/huggingface}:/root/.cache/huggingface
+      - ${QWEN3TTS_ROOT:-./external/Qwen3TTS-Streaming}:/opt/Qwen3TTS-Streaming:ro
     environment:
       TURN_API_URL: ws://turn-bridge:8000/turn
       LLM_API_URL: http://llm:6007/chat
-      QWEN3_TTS_WS_URL: ${QWEN3_TTS_WS_URL:-ws://host.docker.internal:50053/v1/ws}
+      QWEN3_TTS_WS_URL: ${QWEN3_TTS_DOCKER_WS_URL:-ws://host.docker.internal:50052/v1/ws}
       QWEN3_TTS_SPEAKER: ${QWEN3_TTS_SPEAKER:-serena}
+      QWEN3TTS_CLIENT_SRC: /opt/Qwen3TTS-Streaming/client/src
+      DEMO_BIND_HOST: 0.0.0.0
       DEMO_PORT: "8443"
     extra_hosts:
       - "host.docker.internal:host-gateway"

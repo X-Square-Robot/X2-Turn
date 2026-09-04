@@ -33,7 +33,7 @@ Browser (HTTPS :8443)
        │    └─ voxtral-realtime bridge
        │         └─ patched vLLM realtime :8011
        ├─ Streaming LLM HTTP :6007
-       └─ Qwen3TTS-Streaming WebSocket :50053 (local)
+       └─ Qwen3TTS-Streaming WebSocket :50052 (local)
 ```
 
 Each browser session keeps its own ASR buffer, LLM history, and a generation
@@ -69,6 +69,30 @@ python -m pip install -e '.[llm]'
 The Qwen3TTS Python SDK can be installed, or loaded directly by setting
 `QWEN3TTS_CLIENT_SRC=/path/to/Qwen3TTS-Streaming/client/src`.
 
+### Build and start local Qwen3TTS-Streaming
+
+The TensorRT engine is GPU-specific; a prebuilt `model.plan` from another GPU
+may not work. Build and deploy the recommended `custom-1.7b` engine on the
+target machine:
+
+```bash
+git clone https://github.com/X-Square-Robot/Qwen3TTS-Streaming.git
+cd Qwen3TTS-Streaming
+bash scripts/bash/autorun.sh all -m custom-1.7b
+curl -f http://127.0.0.1:50052/v1/capabilities
+```
+
+Follow that repository's prerequisites if the build reports missing
+TensorRT, CUDA, Git LFS, or model access. If the engine package is already
+built, this repository also provides a small standalone launcher:
+
+```bash
+cd full-duplex-demo
+cp .env.example .env
+# Set QWEN3TTS_ROOT, ENGINE_PYTHON, ENGINE_MODEL_PACKAGE_DIR and QWEN3_TTS_GPU.
+bash scripts/start_qwen3tts_engine.sh
+```
+
 ## Model setup
 
 Defaults may be replaced with local paths:
@@ -80,7 +104,7 @@ Defaults may be replaced with local paths:
 ```bash
 # from full-duplex-demo/
 cp .env.example .env
-# edit QWEN3TTS_CLIENT_SRC=/absolute/path/to/Qwen3TTS-Streaming/client/src
+# edit QWEN3TTS_ROOT and QWEN3TTS_CLIENT_SRC
 # edit VOXTRAL_VLLM_MODEL=/absolute/path/to/X2-Turn-4B-0812-vllm
 ```
 
@@ -126,7 +150,10 @@ it private. Override or disable it with `VOXTRAL_TRACE_JSONL`.
 vLLM uses `--enforce-eager`, matching `serve.sh`.
 
 The Compose template connects to a Qwen3TTS-Streaming engine running on the
-host at `host.docker.internal:50053`.
+host at `host.docker.internal:50052`. Set `QWEN3TTS_ROOT` to the host checkout
+so the app container can mount the SDK, and set `VOXTRAL_VLLM_MODEL` to the
+exported model directory. Override `QWEN3_TTS_DOCKER_WS_URL` if the engine is
+not running on the Compose host.
 
 ## Licensing
 

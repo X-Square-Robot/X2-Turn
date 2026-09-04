@@ -68,7 +68,7 @@ Example:
 export VLLM_PY=/path/to/x2-turn-vllm-env/bin/python
 export VOXTRAL_VLLM_MODEL=/path/to/X2-Turn-4B-0812-vllm
 export QWEN3TTS_CLIENT_SRC=/path/to/Qwen3TTS-Streaming/client/src
-export QWEN3_TTS_WS_URL=ws://127.0.0.1:50053/v1/ws
+export QWEN3_TTS_WS_URL=ws://127.0.0.1:50052/v1/ws
 bash full-duplex-demo/start_demo.sh
 ```
 

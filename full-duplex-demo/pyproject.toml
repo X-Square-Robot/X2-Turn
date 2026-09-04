@@ -16,7 +16,7 @@ dependencies = [
   "soxr>=0.3.7",
   "uvicorn[standard]>=0.29",
   "voxtral-realtime>=0.1.0",
-  "websocket-client>=1.7",
+  "websocket-client>=1.9",
 ]
 
 [project.optional-dependencies]

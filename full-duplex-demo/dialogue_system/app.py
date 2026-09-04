@@ -658,8 +658,13 @@ async def websocket_endpoint(websocket: WebSocket):
         logger.error(f"WebSocket error: {e}", exc_info=True)
     finally:
         if session:
-            session.is_active = False
-            session.stop_event.set()
+            with session.lock:
+                session.is_active = False
+                session.stop_event.set()
+                tts_turn = session.tts_turn
+                session.tts_turn = None
+            if tts_turn is not None:
+                tts_turn.cancel(reason="client_disconnect")
             vad_pool.release(session.vad)
             session_manager.remove_session(client_id)
         logger.info(f"Session cleaned up: {client_id}")
