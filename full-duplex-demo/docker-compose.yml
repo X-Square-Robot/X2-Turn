@@ -70,35 +70,17 @@ services:
       timeout: 3s
       retries: 60
 
-  tts:
-    <<: *demo
-    profiles: ["cosyvoice"]
-    environment:
-      COSY_ROOT: /opt/CosyVoice
-    volumes:
-      - .:/app
-      - ${HF_HOME:-${HOME}/.cache/huggingface}:/root/.cache/huggingface
-      - ${COSY_ROOT:-./external/CosyVoice}:/opt/CosyVoice:ro
-    command: ["python3", "voxtral_bridge/tts_server_cosyvoice.py", "--model-dir", "${COSY_MODEL:-FunAudioLLM/CosyVoice2-0.5B}", "--port", "6017"]
-    ports: ["6017:6017"]
-    gpus:
-      - driver: nvidia
-        device_ids: ["${TTS_GPU:-1}"]
-        capabilities: [gpu]
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:6017/health"]
-      interval: 10s
-      timeout: 3s
-      retries: 60
-
   app:
     <<: *demo
     command: ["bash", "scripts/run_app.sh"]
     environment:
       TURN_API_URL: ws://turn-bridge:8000/turn
       LLM_API_URL: http://llm:6007/chat
-      TTS_API_URL: ${TTS_API_URL:-http://tts:6017/tts}
+      QWEN3_TTS_WS_URL: ${QWEN3_TTS_WS_URL:-ws://host.docker.internal:50053/v1/ws}
+      QWEN3_TTS_SPEAKER: ${QWEN3_TTS_SPEAKER:-serena}
       DEMO_PORT: "8443"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports: ["8443:8443"]
     depends_on:
       turn-bridge:

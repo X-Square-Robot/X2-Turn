@@ -26,12 +26,9 @@ TEXT_SUFFIXES = {
 ALLOWED_CJK_FILES = {
     Path("README_zh.md"),  # The Chinese repository entry point.
     # Functional Chinese-language data; translating literals changes behavior.
-    Path("full-duplex-demo/dialogue_system/clients/tts_client.py"),
     Path("full-duplex-demo/dialogue_system/modules/utils/MyTn/cn_tn.py"),
     Path("full-duplex-demo/dialogue_system/modules/utils/backchannel_utils.py"),
     Path("full-duplex-demo/tests/test_frame_turn_controller.py"),
-    Path("full-duplex-demo/voxtral_bridge/tts_server.py"),
-    Path("full-duplex-demo/voxtral_bridge/tts_server_cosyvoice.py"),
     Path("voxtral-realtime/src/voxtral_realtime/turn/controller.py"),
 }
 

@@ -28,7 +28,6 @@ __pycache__/
 pretrained_models/
 outputs/
 logs/
-CosyVoice_official/
 *.pid
 certs/
 *.egg-info/

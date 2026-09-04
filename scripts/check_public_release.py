@@ -16,7 +16,6 @@ SKIP_DIRS = {
     "__pycache__",
     "build",
     "certs",
-    "CosyVoice_official",
     "logs",
     "node_modules",
 }

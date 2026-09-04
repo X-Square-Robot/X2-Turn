@@ -7,8 +7,8 @@ It is not the first path in this repository.
 The demo streams ASR and turn states, a reply LLM, TTS, and barge-in during
 playback. The frontend comes from
 [SoulX-Duplug dialogue-system](https://github.com/Soul-AILab/SoulX-Duplug/tree/dialogue-system).
-Model weights, CosyVoice source, recordings, logs, and evaluation datasets are
-not in this tree.
+Model weights, Qwen3TTS-Streaming, recordings, logs, and evaluation datasets
+are not in this tree.
 
 ## Before you start
 
@@ -19,8 +19,8 @@ Work through this checklist first:
    [`voxtral-realtime/integrations/vllm/README.md`](../voxtral-realtime/integrations/vllm/README.md).
 3. `VOXTRAL_VLLM_MODEL` is an **exported directory** that contains
    `consolidated.safetensors`, not the Hugging Face model ID.
-4. You have separate environments for patched vLLM, this demo, and (unless
-   `TTS_BACKEND=edge`) upstream CosyVoice. See
+4. A local Qwen3TTS-Streaming standalone engine is running, and
+   `QWEN3TTS_CLIENT_SRC` points to its `client/src` directory. See
    [`../environments/README.md`](../environments/README.md).
 5. Linux, extra GPU memory, `curl`, and `openssl`.
 
@@ -33,7 +33,7 @@ Browser (HTTPS :8443)
        │    └─ voxtral-realtime bridge
        │         └─ patched vLLM realtime :8011
        ├─ Streaming LLM HTTP :6007
-       └─ Streaming TTS HTTP :6017 (CosyVoice) or :6016 (Edge-TTS default)
+       └─ Qwen3TTS-Streaming WebSocket :50053 (local)
 ```
 
 Each browser session keeps its own ASR buffer, LLM history, and a generation
@@ -63,16 +63,11 @@ The Python packages here are not on PyPI. From `full-duplex-demo/`:
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e ../voxtral-realtime
-python -m pip install -e '.[demo,llm]'
+python -m pip install -e '.[llm]'
 ```
 
-CosyVoice stays in its upstream environment. Do not copy that source tree into
-this repository. Install the TTS extra there:
-
-```bash
-pip install -e '.[tts]'
-pip install -e ./cosyvoice_vllm_plugin
-```
+The Qwen3TTS Python SDK can be installed, or loaded directly by setting
+`QWEN3TTS_CLIENT_SRC=/path/to/Qwen3TTS-Streaming/client/src`.
 
 ## Model setup
 
@@ -80,16 +75,16 @@ Defaults may be replaced with local paths:
 
 - Turn/ASR: `x-square-robot/X2-Turn-4B-0812`
 - LLM: `Qwen/Qwen2.5-3B-Instruct`
-- TTS: `FunAudioLLM/CosyVoice2-0.5B`
+- TTS: local Qwen3TTS-Streaming `custom-1.7b`
 
 ```bash
 # from full-duplex-demo/
 cp .env.example .env
-# edit COSY_ROOT=/absolute/path/to/CosyVoice
+# edit QWEN3TTS_CLIENT_SRC=/absolute/path/to/Qwen3TTS-Streaming/client/src
 # edit VOXTRAL_VLLM_MODEL=/absolute/path/to/X2-Turn-4B-0812-vllm
 ```
 
-`VOXTRAL_MODEL`, `LLM_MODEL`, and `COSY_MODEL` accept hub IDs or directories.
+`VOXTRAL_MODEL` and `LLM_MODEL` accept hub IDs or directories.
 `start_demo.sh` will not start vLLM unless `VOXTRAL_VLLM_MODEL` is a directory
 containing `consolidated.safetensors`. A healthy vLLM already on `:8011` is
 reused. The GPU for that service is `TURN_GPU` (`VAD_GPU` is a legacy alias).
@@ -109,7 +104,7 @@ Set `BIND_HOST=0.0.0.0` only when another machine must connect.
 
 ```bash
 bash start_demo.sh stop      # stop bridge, LLM, and app
-bash start_demo.sh stop-all  # also stop Voxtral and TTS
+bash start_demo.sh stop-all  # also stop the locally launched Voxtral service
 ```
 
 Logs go under `logs/`. To attach the UI to services that are already running:
@@ -118,9 +113,8 @@ Logs go under `logs/`. To attach the UI to services that are already running:
 bash scripts/run_app.sh
 ```
 
-Set `TTS_BACKEND=edge` to skip CosyVoice. Edge-TTS then listens on `:6016`
-unless `TTS_PORT` is set. Copying `.env.example` sets `TTS_PORT=6017` for both
-backends.
+The local Qwen3TTS-Streaming engine must be healthy before the launcher starts
+the dialogue app.
 
 The launcher writes an audio-free turn trace to `logs/turn_trace.jsonl`. Keep
 it private. Override or disable it with `VOXTRAL_TRACE_JSONL`.
@@ -131,9 +125,8 @@ it private. Override or disable it with `VOXTRAL_TRACE_JSONL`.
 `DEMO_IMAGE` to an image that already contains this checkout. Inside Compose,
 vLLM uses `--enforce-eager`, matching `serve.sh`.
 
-```bash
-COSY_ROOT=/path/to/CosyVoice docker compose --profile cosyvoice up
-```
+The Compose template connects to a Qwen3TTS-Streaming engine running on the
+host at `host.docker.internal:50053`.
 
 ## Licensing
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Launch the full-duplex dialogue demo:
-#   X2 Turn ASR + turn-taking, Qwen2.5-3B LLM, and CosyVoice2 or Edge-TTS.
+#   X2 Turn ASR + turn-taking, Qwen2.5-3B LLM, and Qwen3TTS-Streaming.
 # Run this script from any directory; paths are resolved relative to this file.
 set -euo pipefail
 
@@ -12,13 +12,11 @@ if [[ -f "$ROOT/.env" ]]; then
   set +a
 fi
 PY="${PY:-python3}"
-COSY_PY="${COSY_PY:-python3}"
 VLLM_PY="${VLLM_PY:-python3}"
 VOXTRAL_CLI="${VOXTRAL_CLI:-voxtral-realtime}"
 VOXTRAL_MODEL="${VOXTRAL_MODEL:-x-square-robot/X2-Turn-4B-0812}"
 VOXTRAL_VLLM_MODEL="${VOXTRAL_VLLM_MODEL:-}"
 LLM_MODEL="${LLM_MODEL:-Qwen/Qwen2.5-3B-Instruct}"
-COSY_MODEL="${COSY_MODEL:-FunAudioLLM/CosyVoice2-0.5B}"
 # Local services bind to loopback unless remote access is requested.
 BIND_HOST="${BIND_HOST:-127.0.0.1}"
 VLLM_PORT="${VLLM_PORT:-8011}"
@@ -46,7 +44,6 @@ if [[ "${1:-}" == "stop" || "${1:-}" == "stop-all" ]]; then
   stop_pid app "$LOG_DIR/app.pid"
   if [[ "${1:-}" == "stop-all" ]]; then
     stop_pid vllm "$LOG_DIR/vllm.pid"
-    stop_pid tts "$LOG_DIR/tts.pid"
   fi
   echo "Stopped."
   exit 0
@@ -55,14 +52,9 @@ fi
 # GPU assignment (override freely). TURN_GPU is preferred; VAD_GPU is a legacy alias.
 TURN_GPU="${TURN_GPU:-${VAD_GPU:-0}}"
 LLM_GPU="${LLM_GPU:-2}"
-TTS_GPU="${TTS_GPU:-1}"
-TTS_BACKEND="${TTS_BACKEND:-cosyvoice}"
-if [[ "$TTS_BACKEND" == "cosyvoice" ]]; then
-  TTS_PORT="${TTS_PORT:-6017}"
-else
-  TTS_PORT="${TTS_PORT:-6016}"
-fi
-TTS_API_URL="${TTS_API_URL:-http://127.0.0.1:$TTS_PORT/tts}"
+QWEN3_TTS_WS_URL="${QWEN3_TTS_WS_URL:-ws://127.0.0.1:50053/v1/ws}"
+QWEN3_TTS_HEALTH_URL="${QWEN3_TTS_HEALTH_URL:-http://127.0.0.1:50053/v1/capabilities}"
+QWEN3_TTS_SPEAKER="${QWEN3_TTS_SPEAKER:-serena}"
 
 # Browsers permit microphone access on localhost; use a real certificate when
 # exposing the demo on another host.
@@ -71,13 +63,25 @@ DEMO_PUBLIC_HOST="${DEMO_PUBLIC_HOST:-localhost}"
 export DEMO_PORT
 export DEMO_SSL_CERT="${DEMO_SSL_CERT:-$ROOT/certs/cert.pem}"
 export DEMO_SSL_KEY="${DEMO_SSL_KEY:-$ROOT/certs/key.pem}"
+need_cert=0
 if [[ ! -f "$DEMO_SSL_CERT" || ! -f "$DEMO_SSL_KEY" ]]; then
+  need_cert=1
+elif ! openssl x509 -in "$DEMO_SSL_CERT" -noout -text 2>/dev/null \
+  | grep -q "$DEMO_PUBLIC_HOST"; then
+  need_cert=1
+fi
+if [[ "$need_cert" == "1" ]]; then
   echo "Generating self-signed TLS cert for $DEMO_PUBLIC_HOST ..."
   mkdir -p "$ROOT/certs"
+  if [[ "$DEMO_PUBLIC_HOST" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    PUBLIC_SAN="IP:$DEMO_PUBLIC_HOST"
+  else
+    PUBLIC_SAN="DNS:$DEMO_PUBLIC_HOST"
+  fi
   openssl req -x509 -newkey rsa:2048 -nodes \
     -keyout "$DEMO_SSL_KEY" -out "$DEMO_SSL_CERT" -days 825 \
     -subj "/CN=$DEMO_PUBLIC_HOST" \
-    -addext "subjectAltName=DNS:$DEMO_PUBLIC_HOST,DNS:localhost,IP:127.0.0.1"
+    -addext "subjectAltName=$PUBLIC_SAN,DNS:localhost,IP:127.0.0.1"
   chmod 600 "$DEMO_SSL_KEY"
 fi
 
@@ -116,7 +120,7 @@ bash "$ROOT/start_demo.sh" stop || true
 
 export PYTHONUNBUFFERED=1
 
-# Timed health probe (CosyVoice /health can hang under load).
+# Timed health probe.
 health_ok() {
   local url="$1"
   curl -sf --connect-timeout 1 --max-time 2 "$url" >/dev/null 2>&1
@@ -127,39 +131,22 @@ port_open() {
   (echo >/dev/tcp/127.0.0.1/"$port") >/dev/null 2>&1
 }
 
-if health_ok "http://127.0.0.1:$TTS_PORT/health" || port_open "$TTS_PORT"; then
-  echo "[1/4] TTS  :$TTS_PORT already running ($TTS_BACKEND)"
-else
-  if [[ "$TTS_BACKEND" == "cosyvoice" ]]; then
-    require_value COSY_ROOT "${COSY_ROOT:-}"
-    if [[ ! -d "$COSY_ROOT/cosyvoice" ]]; then
-      echo "ERROR: COSY_ROOT must be an external CosyVoice checkout containing cosyvoice/." >&2
-      exit 2
-    fi
-    require_command "$COSY_PY"
-    export COSY_ROOT
-    echo "[1/4] TTS  :$BIND_HOST:$TTS_PORT ($COSY_MODEL, GPU $TTS_GPU, vLLM+JIT+TRT)"
-    # Ensure CosyVoice2ForCausalLM is registered inside vLLM EngineCore subprocess.
-    export VLLM_PLUGINS="${VLLM_PLUGINS:-cosyvoice2_register}"
-    export COSY_ROOT
-    export PYTHONPATH="${COSY_ROOT}${PYTHONPATH:+:$PYTHONPATH}"
-    CUDA_VISIBLE_DEVICES="$TTS_GPU" nohup "$COSY_PY" -u "$ROOT/voxtral_bridge/tts_server_cosyvoice.py" \
-      --model-dir "$COSY_MODEL" --host "$BIND_HOST" --port "$TTS_PORT" --vllm --jit --trt \
-      >"$LOG_DIR/tts.log" 2>&1 &
-  else
-    echo "[1/4] TTS  :$BIND_HOST:$TTS_PORT (Edge-TTS fallback)"
-    nohup "$PY" -u "$ROOT/voxtral_bridge/tts_server.py" \
-      --host "$BIND_HOST" --port "$TTS_PORT" \
-      >"$LOG_DIR/tts.log" 2>&1 &
-  fi
-  echo $! >"$LOG_DIR/tts.pid"
+if ! health_ok "$QWEN3_TTS_HEALTH_URL"; then
+  echo "ERROR: local Qwen3TTS-Streaming is not ready: $QWEN3_TTS_WS_URL" >&2
+  echo "Start the local engine first, then rerun this launcher." >&2
+  exit 2
 fi
+echo "[1/4] TTS  $QWEN3_TTS_WS_URL (local Qwen3TTS-Streaming)"
 
-echo "[2/4] LLM  :$BIND_HOST:6007 (GPU $LLM_GPU)"
-CUDA_VISIBLE_DEVICES="$LLM_GPU" nohup "$PY" -u "$ROOT/voxtral_bridge/llm_server.py" \
-  --model_dir "$LLM_MODEL" --host "$BIND_HOST" --port 6007 \
-  >"$LOG_DIR/llm.log" 2>&1 &
-echo $! >"$LOG_DIR/llm.pid"
+if health_ok "http://127.0.0.1:6007/health"; then
+  echo "[2/4] LLM  :6007 already running"
+else
+  echo "[2/4] LLM  :$BIND_HOST:6007 (GPU $LLM_GPU)"
+  CUDA_VISIBLE_DEVICES="$LLM_GPU" nohup "$PY" -u "$ROOT/voxtral_bridge/llm_server.py" \
+    --model_dir "$LLM_MODEL" --host "$BIND_HOST" --port 6007 \
+    >"$LOG_DIR/llm.log" 2>&1 &
+  echo $! >"$LOG_DIR/llm.pid"
+fi
 
 if health_ok "http://127.0.0.1:$VLLM_PORT/health" || port_open "$VLLM_PORT"; then
   echo "[3a/4] vLLM :$VLLM_PORT already running"
@@ -186,18 +173,21 @@ if [[ -z "${VOXTRAL_TRACE_JSONL+x}" ]]; then
   VOXTRAL_TRACE_JSONL="$LOG_DIR/turn_trace.jsonl"
 fi
 export VOXTRAL_TRACE_JSONL
-echo "[3b/4] Turn bridge :$BIND_HOST:8000 (voxtral-realtime, forwards to vLLM)"
-nohup "$VOXTRAL_CLI" serve \
-  --vllm-url "ws://127.0.0.1:$VLLM_PORT/v1/realtime" \
-  --model "$VOXTRAL_MODEL" --host "$BIND_HOST" --port 8000 \
-  >"$LOG_DIR/vad.log" 2>&1 &
-echo $! >"$LOG_DIR/vad.pid"
+if health_ok "http://127.0.0.1:8000/health"; then
+  echo "[3b/4] Turn bridge :8000 already running"
+else
+  echo "[3b/4] Turn bridge :$BIND_HOST:8000 (voxtral-realtime, forwards to vLLM)"
+  nohup "$VOXTRAL_CLI" serve \
+    --vllm-url "ws://127.0.0.1:$VLLM_PORT/v1/realtime" \
+    --model "$VOXTRAL_MODEL" --host "$BIND_HOST" --port 8000 \
+    >"$LOG_DIR/vad.log" 2>&1 &
+  echo $! >"$LOG_DIR/vad.pid"
+fi
 
 echo "Waiting for vLLM / turn bridge / LLM / TTS to become healthy ..."
 for i in $(seq 1 300); do
   ok=0
-  # TTS: accept open port if /health is wedged
-  if health_ok "http://127.0.0.1:$TTS_PORT/health" || port_open "$TTS_PORT"; then ok=$((ok+1)); fi
+  if health_ok "$QWEN3_TTS_HEALTH_URL"; then ok=$((ok+1)); fi
   if health_ok "http://127.0.0.1:6007/health"; then ok=$((ok+1)); fi
   if health_ok "http://127.0.0.1:8000/health"; then ok=$((ok+1)); fi
   if health_ok "http://127.0.0.1:$VLLM_PORT/health"; then ok=$((ok+1)); fi
@@ -215,7 +205,9 @@ done
 echo "[4/4] Dialogue UI :$BIND_HOST:$DEMO_PORT (HTTPS)"
 cd "$ROOT/dialogue_system"
 export PYTHONPATH="$ROOT/dialogue_system:${PYTHONPATH:-}"
-export TTS_API_URL DEMO_PORT DEMO_SSL_CERT DEMO_SSL_KEY
+export QWEN3_TTS_WS_URL QWEN3_TTS_SPEAKER
+export QWEN3TTS_CLIENT_SRC LLM_TOKEN_STREAM
+export DEMO_PORT DEMO_SSL_CERT DEMO_SSL_KEY
 export DEMO_BIND_HOST="$BIND_HOST"
 nohup "$PY" app.py >"$LOG_DIR/app.log" 2>&1 &
 echo $! >"$LOG_DIR/app.pid"
@@ -225,4 +217,4 @@ echo
 echo "Done. Open:  https://$DEMO_PUBLIC_HOST:$DEMO_PORT"
 echo "             (browser will warn on self-signed cert — click Advanced → Proceed)"
 echo "Stop with:   $0 stop"
-echo "Logs:        $LOG_DIR/{tts,llm,vad,app}.log"
+echo "Logs:        $LOG_DIR/{llm,vad,app}.log"

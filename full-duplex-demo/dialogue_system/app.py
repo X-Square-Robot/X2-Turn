@@ -15,7 +15,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.staticfiles import StaticFiles
 from starlette.websockets import WebSocketState
 
-from clients.tts_client import IndexTTS_VLLM
+from clients.qwen3_tts_client import Qwen3TTSClient
 from clients.llm_client import QwenLLM_stream
 from clients.vad_client import TurnTaking
 from modules.utils.backchannel_utils import check_backchannel
@@ -84,6 +84,7 @@ class ChatSession:
         self.pending_start_time = None
         self.interruption_time = None
         self.bot_speaking = False
+        self.tts_turn = None
 
     @property
     def stop_event(self):
@@ -108,13 +109,17 @@ class ChatSession:
             self.pending_audio_duration = 0.0
             self.pending_start_time = None
             self.interruption_time = None
+            old_tts_turn = self.tts_turn
+            self.tts_turn = None
             self.metrics[epoch] = {
                 "accepted_at": accepted_at,
                 "turn_id": f"{self.client_id[:8]}-{epoch}",
             }
             for old_epoch in sorted(self.metrics)[:-8]:
                 self.metrics.pop(old_epoch, None)
-            return epoch, self._stop_event, pending
+        if old_tts_turn is not None:
+            old_tts_turn.cancel(reason="new_turn")
+        return epoch, self._stop_event, pending
 
     def is_current(self, epoch, stop_event=None):
         with self.lock:
@@ -126,12 +131,17 @@ class ChatSession:
 
     def interrupt(self, reason="barge_in"):
         """Interrupts current inference or audio playback."""
+        tts_turn = None
         with self.lock:
             self.bot_speaking = False
             self.generation_in_progress = False
             self._stop_event.set()
             self.generation_epoch += 1
             epoch = self.generation_epoch
+            tts_turn = self.tts_turn
+            self.tts_turn = None
+        if tts_turn is not None:
+            tts_turn.cancel(reason=reason)
         try:
             self.vad.set_bot_speaking(False)
         except Exception:
@@ -211,10 +221,16 @@ async def emit_ws_event(ws: WebSocket, event: str, data):
 # ==== Global Singleton Initialization ====
 vad_pool = VADModelPool(TurnTaking)
 session_manager = SessionManager()
-llm = QwenLLM_stream()
-tts = IndexTTS_VLLM(api_url=os.environ.get("TTS_API_URL", "http://127.0.0.1:6017/tts"))
+qwen3_ws_url = os.environ.get("QWEN3_TTS_WS_URL", "").strip()
+if not qwen3_ws_url:
+    raise RuntimeError("QWEN3_TTS_WS_URL is required")
+llm = QwenLLM_stream(token_stream=True)
+tts = Qwen3TTSClient(
+    speaker=os.environ.get("QWEN3_TTS_SPEAKER", "serena"),
+    ws_url=qwen3_ws_url,
+)
 asr = None
-print("System initialized: VAD Pool, LLM client, TTS client ready.")
+print(f"System initialized: local Qwen3TTS {qwen3_ws_url}.")
 
 
 def emit_to_room(client_id, event, data):
@@ -251,6 +267,8 @@ def emit_audio_chunk(client_id, epoch, pcm):
     session = session_manager.get_session(client_id)
     if not session or not main_loop or not session.is_current(epoch):
         return
+    if isinstance(pcm, (bytes, bytearray, memoryview)) and len(pcm) % 2:
+        pcm = bytes(pcm) + b"\x00"
     ws = session.websocket
 
     async def _send():
@@ -362,42 +380,31 @@ def pipeline_worker(client_id, audio_segment, sample_rate, accepted_at=None):
             client_id, stop_event=current_stop_event
         )
 
-        # LLM producer runs independently so TTS cannot stall the HTTP stream.
-        text_queue = queue.Queue(maxsize=8)
-        producer_done = object()
         message_parts = []
         parts_lock = threading.Lock()
+        first_emit_time = None
+        total_audio_duration = 0.0
+        turn = tts.open_turn()
+        with session.lock:
+            session.tts_turn = turn
+        first_tts_request_at = time.perf_counter()
+        session.metrics[epoch]["tts_request_at"] = first_tts_request_at
 
-        def put_text(item):
-            while session.is_current(epoch, current_stop_event):
-                try:
-                    text_queue.put(item, timeout=0.1)
-                    return True
-                except queue.Full:
-                    continue
-            return False
-
-        def llm_producer():
-            first = True
+        def qwen3_producer():
+            first_chunk = True
             try:
-                source = (
-                    llm_reply_gen
-                    if hasattr(llm_reply_gen, "__iter__")
-                    and not isinstance(llm_reply_gen, str)
-                    else [llm_reply_gen]
-                )
-                for chunk in source:
+                for chunk in llm_reply_gen:
                     if not session.is_current(epoch, current_stop_event):
-                        break
+                        turn.cancel()
+                        return
                     now = time.perf_counter()
-                    if first:
-                        first = False
+                    if first_chunk:
+                        first_chunk = False
                         session.metrics[epoch]["llm_first_at"] = now
                         logger.info(
                             f"[LATENCY] turn={turn_id} stage=llm_first "
                             f"asr_to_llm_ms={(now - asr_at) * 1000:.1f}"
                         )
-                    logger.info(f"[{client_id}] LLM Chunk: {chunk}")
                     with parts_lock:
                         message_parts.append(chunk)
                     emit_to_room(
@@ -405,40 +412,19 @@ def pipeline_worker(client_id, audio_segment, sample_rate, accepted_at=None):
                         "text_response",
                         {"text": chunk, "epoch": epoch, "turn_id": turn_id},
                     )
-                    if not put_text(chunk):
-                        break
-            finally:
-                put_text(producer_done)
+                    turn.send_text(chunk)
+                turn.end()
+            except Exception as exc:
+                logger.error(f"[{client_id}] Qwen3 TTS feed failed: {exc}")
+                turn.cancel()
 
-        producer_thread = threading.Thread(target=llm_producer, daemon=True)
+        producer_thread = threading.Thread(target=qwen3_producer, daemon=True)
         producer_thread.start()
-
-        spoken_parts = []
-        first_emit_time = None
-        total_audio_duration = 0.0
-        first_tts_request_at = None
-
-        while session.is_current(epoch, current_stop_event):
-            try:
-                chunk = text_queue.get(timeout=0.1)
-            except queue.Empty:
-                if not producer_thread.is_alive():
-                    break
-                continue
-            if chunk is producer_done:
-                break
-            spoken_parts.append(chunk)
-            tts_request_at = time.perf_counter()
-            if first_tts_request_at is None:
-                first_tts_request_at = tts_request_at
-                session.metrics[epoch]["tts_request_at"] = tts_request_at
-
-            for wav_chunk in tts.synthesize(
-                chunk, streaming=True, stop_event=current_stop_event
-            ):
+        try:
+            for wav_chunk in turn.iter_pcm():
                 if not session.is_current(epoch, current_stop_event):
+                    turn.cancel()
                     break
-
                 if first_emit_time is None:
                     first_emit_time = time.time()
                     first_pcm_at = time.perf_counter()
@@ -451,21 +437,22 @@ def pipeline_worker(client_id, audio_segment, sample_rate, accepted_at=None):
                     with session.lock:
                         session.bot_speaking = True
                         session.vad.set_bot_speaking(True)
-
-                # Calculate audio duration: bytes / (sample_rate * channels * bytes_per_sample)
-                # Assuming 24k sample rate, 1 channel, 16-bit (2 bytes) = 48000 bytes/sec
                 total_audio_duration += len(wav_chunk) / 48000.0
                 emit_audio_chunk(client_id, epoch, wav_chunk)
-
-                # Keep a continuously available snapshot for barge-in commit.
+                with parts_lock:
+                    spoken = "".join(message_parts)
                 with session.lock:
                     if session.generation_epoch == epoch:
-                        session.pending_message = "".join(spoken_parts)
+                        session.pending_message = spoken
                         session.pending_audio_duration = total_audio_duration
                         session.pending_start_time = first_emit_time
-
+        finally:
+            with session.lock:
+                if session.tts_turn is turn:
+                    session.tts_turn = None
         producer_thread.join(timeout=1.0)
-        if session.is_current(epoch, current_stop_event) and total_audio_duration > 0:
+
+        if session.is_current(epoch, current_stop_event):
             with parts_lock:
                 complete_message = "".join(message_parts)
             with session.lock:
@@ -474,14 +461,12 @@ def pipeline_worker(client_id, audio_segment, sample_rate, accepted_at=None):
                 session.pending_start_time = first_emit_time
                 session.interruption_time = None
                 session.generation_in_progress = False
-            emit_to_room(
-                client_id,
-                "audio_generation_done",
-                {"epoch": epoch, "turn_id": turn_id},
-            )
-        elif session.is_current(epoch, current_stop_event):
-            with session.lock:
-                session.generation_in_progress = False
+            if total_audio_duration > 0:
+                emit_to_room(
+                    client_id,
+                    "audio_generation_done",
+                    {"epoch": epoch, "turn_id": turn_id},
+                )
 
     except Exception as e:
         logger.error(f"Error in pipeline for {client_id}: {e}", exc_info=True)
