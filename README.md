@@ -182,7 +182,8 @@ during playback. It is a separate setup: patched vLLM, the dialogue app, and a
 local Qwen3TTS-Streaming engine. Start from
 [`full-duplex-demo/README.md`](full-duplex-demo/README.md).
 
-https://github.com/user-attachments/assets/3e01f699-3dc1-4bcd-89e1-2cff981cbe90
+https://github.com/user-attachments/assets/bb71bb57-8f21-4616-8867-2a4b9c6a52b3
+
 
 ### Realtime serving with vLLM
 
