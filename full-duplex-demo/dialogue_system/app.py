@@ -439,13 +439,9 @@ def pipeline_worker(client_id, audio_segment, sample_rate, accepted_at=None):
                         session.vad.set_bot_speaking(True)
                 total_audio_duration += len(wav_chunk) / 48000.0
                 emit_audio_chunk(client_id, epoch, wav_chunk)
-                with parts_lock:
-                    spoken = "".join(message_parts)
-                with session.lock:
-                    if session.generation_epoch == epoch:
-                        session.pending_message = spoken
-                        session.pending_audio_duration = total_audio_duration
-                        session.pending_start_time = first_emit_time
+                # Do not commit partial history while synthesis is still in
+                # progress: the LLM and TTS queues run ahead of playback, so
+                # there is no reliable text/audio ratio yet.
         finally:
             with session.lock:
                 if session.tts_turn is turn:

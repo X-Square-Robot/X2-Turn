@@ -14,3 +14,11 @@ def test_environment_config_and_public_model_default():
     assert config.host == "127.0.0.1"
     assert config.model_id == "x-square-robot/X2-Turn-4B-0812"
     assert config.trace_jsonl == "/tmp/turn-trace.jsonl"
+    assert config.end_confirm_frames == 1
+    assert config.silence_end_frames == 10
+    assert config.tail_min_frames == 1
+    assert config.tail_max_frames == 1
+    assert config.tail_stable_frames == 1
+    assert config.short_tail_min_frames == 3
+    assert config.short_tail_max_frames == 5
+    assert config.acoustic_vad_max_hold_frames == 3

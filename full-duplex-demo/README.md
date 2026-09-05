@@ -55,6 +55,19 @@ While TTS is playing, the demo stops playback only after audio has started
 confirmation, ASR tail wait, and backchannel policy are in
 `voxtral_realtime.turn.controller`.
 
+### Reproducible live pause handling
+
+The defaults in `voxtral-realtime` and `.env.example` are the release profile
+used by this demo. It keeps the FDB tail-confirmation behavior, but uses
+`VOXTRAL_SILENCE_END_FRAMES=10` for a live microphone instead of the offline
+FDB profile's 18-frame clean-silence window. The shorter live value avoids
+long waits when room noise repeatedly resets silence detection.
+
+Copy `.env.example` to `.env` without removing this block to reproduce the
+published pause handling. Headphones or browser echo cancellation are still
+recommended: pause handling cannot prevent loud speaker output from physically
+re-entering the microphone as a new utterance.
+
 ## Install
 
 The Python packages here are not on PyPI. From `full-duplex-demo/`:

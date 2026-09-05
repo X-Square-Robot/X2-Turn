@@ -42,17 +42,17 @@ PURE_BACKCHANNEL_FILLERS = frozenset(
 @dataclass
 class FrameTurnConfig:
     end_confirm_frames: int = 1  # N: frames after turn_end before ACCEPT
-    silence_end_frames: int = 3  # K: non-speech frames after speaking → soft end
+    silence_end_frames: int = 10  # live mic: 800 ms non-speech → soft end
     min_asr_chars: int = 1  # reject empty ACCEPT
-    tail_min_frames: int = 2  # collect delayed ASR tail for at least 160 ms
-    tail_max_frames: int = 5  # force decision after at most 400 ms
-    tail_stable_frames: int = 2  # unchanged ASR frames required after minimum
+    tail_min_frames: int = 1  # FDB-style fast tail confirmation
+    tail_max_frames: int = 1
+    tail_stable_frames: int = 1
     backchannel_confirm_frames: int = 2
     backchannel_fallback_idle_frames: int = 3
     short_asr_chars: int = 4
-    short_tail_min_frames: int = 4  # K + tail = ~560 ms minimum
-    short_tail_max_frames: int = 7  # K + tail = ~800 ms maximum
-    acoustic_vad_max_hold_frames: int = 8  # fail-safe: at most 640 ms veto
+    short_tail_min_frames: int = 3
+    short_tail_max_frames: int = 5
+    acoustic_vad_max_hold_frames: int = 3  # fail-safe: at most 240 ms veto
 
 
 @dataclass

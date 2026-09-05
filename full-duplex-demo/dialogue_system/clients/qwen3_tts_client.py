@@ -30,14 +30,17 @@ except ImportError as exc:
 
 
 def _config(speaker: str) -> SynthesisConfig:
+    sample_rate = int(os.environ.get("QWEN3_TTS_SAMPLE_RATE", "24000"))
+    if sample_rate != 24000:
+        raise ValueError("The dialogue frontend currently requires 24000 Hz TTS audio")
     return SynthesisConfig(
         task_type=os.environ.get("QWEN3_TTS_TASK_TYPE", "custom_voice"),
-        language=os.environ.get("QWEN3_TTS_LANGUAGE", "Chinese"),
+        language=os.environ.get("QWEN3_TTS_LANGUAGE", "Auto"),
         speaker=speaker,
         input_mode=os.environ.get("QWEN3_TTS_INPUT_MODE", "token"),
         audio=AudioFormat(
             encoding="pcm_s16le",
-            sample_rate=int(os.environ.get("QWEN3_TTS_SAMPLE_RATE", "24000")),
+            sample_rate=sample_rate,
             channels=1,
         ),
     )
@@ -52,11 +55,13 @@ class Qwen3TurnSession:
             )
         )
         self._send_closed = False
+        self._cancelled = False
         self._seq = 0
+        self._opened_at = time.monotonic()
 
     def send_text(self, text: str) -> None:
-        text = (text or "").strip()
-        if not text or self._send_closed:
+        text = text or ""
+        if text == "" or self._send_closed:
             return
         self._seq += 1
         self._session.send_text(text, seq_no=self._seq)
@@ -68,6 +73,7 @@ class Qwen3TurnSession:
         self._session.end()
 
     def cancel(self, reason: str = "barge_in") -> None:
+        self._cancelled = True
         self._send_closed = True
         try:
             # close() is intentionally stronger than cancel(): it also
@@ -76,12 +82,11 @@ class Qwen3TurnSession:
         except Exception:
             pass
 
+    def expired(self, max_age_s: float) -> bool:
+        return time.monotonic() - self._opened_at >= max_age_s
+
     def iter_pcm(self, idle_s: float | None = None):
-        idle_s = float(
-            idle_s
-            if idle_s is not None
-            else os.environ.get("QWEN3_TTS_IDLE_S", "20")
-        )
+        idle_s = float(idle_s if idle_s is not None else os.environ.get("QWEN3_TTS_IDLE_S", "20"))
         messages: queue.Queue[object] = queue.Queue()
         sentinel = object()
 
@@ -104,19 +109,21 @@ class Qwen3TurnSession:
             if message is sentinel:
                 return
             if isinstance(message, Exception):
+                if self._cancelled:
+                    return
                 raise message
             if isinstance(message, AudioChunk) and message.pcm_bytes:
                 yield message.pcm_bytes
             elif isinstance(message, StreamEvent) and message.type == "error":
+                if self._cancelled:
+                    return
                 raise RuntimeError(message.message or "Qwen3TTS stream failed")
 
 
 class Qwen3TTSClient:
     def __init__(self, speaker: str | None = None, ws_url: str | None = None):
         self.speaker = speaker or os.environ.get("QWEN3_TTS_SPEAKER", "serena")
-        self.ws_url = ws_url or os.environ.get(
-            "QWEN3_TTS_WS_URL", "ws://127.0.0.1:50052/v1/ws"
-        )
+        self.ws_url = ws_url or os.environ.get("QWEN3_TTS_WS_URL", "ws://127.0.0.1:50052/v1/ws")
         self._client = TTSClient.connect(
             self.ws_url,
             timeout=float(os.environ.get("QWEN3_TTS_TIMEOUT_S", "180")),
@@ -128,9 +135,7 @@ class Qwen3TTSClient:
             flush=True,
         )
         self._spawn_warm()
-        deadline = time.time() + float(
-            os.environ.get("QWEN3_TTS_PREWARM_WAIT_S", "5")
-        )
+        deadline = time.time() + float(os.environ.get("QWEN3_TTS_PREWARM_WAIT_S", "5"))
         while time.time() < deadline:
             with self._lock:
                 if self._warm is not None:
@@ -168,6 +173,11 @@ class Qwen3TTSClient:
         with self._lock:
             session = self._warm
             self._warm = None
+        if session is not None and session.expired(
+            float(os.environ.get("QWEN3_TTS_PREWARM_MAX_AGE_S", "240"))
+        ):
+            session.cancel("expired_prewarm")
+            session = None
         self._spawn_warm()
         if session is not None:
             return session
