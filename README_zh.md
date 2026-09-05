@@ -33,6 +33,7 @@ https://github.com/user-attachments/assets/4040eb7a-4f5b-4e25-8ff4-893caeeb0702
 
 ## 🔥 动态
 
+- **[2026-09-05]** 更新全双工对话 Demo，响应更快、体验更流畅，并支持停顿处理（Pause Handling）。
 - **[2026-08-28]** 开源 Stage 1 中英流式 ASR 权重 [X2-ASR-4B-0812](https://huggingface.co/x-square-robot/X2-ASR-4B-0812)（无 turn 头）。
 - **[2026-08-20]** 发布 [论文](https://arxiv.org/abs/2608.10878)、代码、X2-Turn-4B 与 Turn Demo。
 
@@ -176,7 +177,7 @@ python voxtral-realtime/integrations/transformers/examples/offline_inference.py 
 打断。它是另一套安装：patched vLLM、对话应用和本地 TTS 引擎。请从
 [`full-duplex-demo/README.md`](full-duplex-demo/README.md) 开始。
 
-https://github.com/user-attachments/assets/3e01f699-3dc1-4bcd-89e1-2cff981cbe90
+https://github.com/user-attachments/assets/bb71bb57-8f21-4616-8867-2a4b9c6a52b3
 
 ### 用 vLLM 做实时服务
 
