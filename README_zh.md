@@ -33,8 +33,9 @@ https://github.com/user-attachments/assets/4040eb7a-4f5b-4e25-8ff4-893caeeb0702
 
 ## 🔥 动态
 
+- **[2026-09-05]** 更新全双工对话 Demo，响应更快、体验更流畅，并支持停顿处理（Pause Handling）。
 - **[2026-08-28]** 开源 Stage 1 中英流式 ASR 权重 [X2-ASR-4B-0812](https://huggingface.co/x-square-robot/X2-ASR-4B-0812)（无 turn 头）。
-- **[2026-08-20]** 发布[论文](https://arxiv.org/abs/2608.10878)、代码、X2-Turn-4B 与 Turn Demo。
+- **[2026-08-20]** 发布 [论文](https://arxiv.org/abs/2608.10878)、代码、X2-Turn-4B 与 Turn Demo。
 
 ## 快速开始
 
@@ -172,11 +173,11 @@ python voxtral-realtime/integrations/transformers/examples/offline_inference.py 
 
 ### 全双工对话 Demo
 
-这条路径会接入可选的 LLM 和 TTS，并演示播放过程中的用户打断。它是另一套
-安装：patched vLLM、对话应用，通常还要一个外部 CosyVoice 环境。请从
+这条路径会接入回复 LLM 和本地 Qwen3TTS-Streaming，并演示播放过程中的用户
+打断。它是另一套安装：patched vLLM、对话应用和本地 TTS 引擎。请从
 [`full-duplex-demo/README.md`](full-duplex-demo/README.md) 开始。
 
-https://github.com/user-attachments/assets/3e01f699-3dc1-4bcd-89e1-2cff981cbe90
+https://github.com/user-attachments/assets/bb71bb57-8f21-4616-8867-2a4b9c6a52b3
 
 ### 用 vLLM 做实时服务
 
@@ -195,8 +196,8 @@ https://github.com/user-attachments/assets/3e01f699-3dc1-4bcd-89e1-2cff981cbe90
   Turn 推理、实时控制器，以及 patched vLLM 集成。
 - [`turn-demo/`](turn-demo/README.md)：展示原始 ASR、80 毫秒 Turn 状态和
   帧级 token / class / probability 表的浏览器 Demo。
-- [`full-duplex-demo/`](full-duplex-demo/README.md)：带可选 LLM 和 TTS 的
-  完整对话栈。
+- [`full-duplex-demo/`](full-duplex-demo/README.md)：带回复 LLM 和本地
+  Qwen3TTS-Streaming 的完整对话栈。
 - [`environments/`](environments/README.md)：相互独立的 Miniforge 环境，
   避免 Transformers、patched vLLM 和对话应用挤在同一套 CUDA/Torch 里。
 
@@ -234,8 +235,8 @@ X2 Turn 建立在开源语音与机器学习社区的模型、研究和基础设
   X2 Turn 在此基础上实现实时 overlay。
 - [Hugging Face Transformers](https://github.com/huggingface/transformers)
   提供模型加载、音频处理及本地推理生态。
-- [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) 提供全双工 Demo
-  使用的可选流式 TTS 集成。
+- [Qwen3TTS-Streaming](https://github.com/X-Square-Robot/Qwen3TTS-Streaming)
+  提供全双工 Demo 使用的本地流式 TTS 引擎。
 
 更详细的归属与许可证信息，请查看各组件中的 `NOTICE` 以及已有的
 `THIRD_PARTY_NOTICES.md` 文档。

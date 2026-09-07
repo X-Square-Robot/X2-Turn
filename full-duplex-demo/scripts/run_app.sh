@@ -13,6 +13,7 @@ if ! command -v "$PY" >/dev/null 2>&1; then
   echo "ERROR: Python executable '$PY' was not found." >&2
   exit 2
 fi
+export DEMO_BIND_HOST="${DEMO_BIND_HOST:-${BIND_HOST:-127.0.0.1}}"
 cd "$ROOT/dialogue_system"
 export PYTHONPATH="$ROOT/dialogue_system:${PYTHONPATH:-}"
 exec "$PY" app.py

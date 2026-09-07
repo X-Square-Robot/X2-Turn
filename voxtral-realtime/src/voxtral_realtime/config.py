@@ -29,20 +29,22 @@ class RealtimeConfig:
     session_ttl_sec: float = 60.0
     gc_interval_sec: float = 10.0
     end_confirm_frames: int = 1
-    silence_end_frames: int = 3
+    # Live-microphone profile: tolerate natural pauses without requiring the
+    # 1.44 s clean-silence window used by the offline FDB evaluation.
+    silence_end_frames: int = 10
     min_asr_chars: int = 1
-    tail_min_frames: int = 2
-    tail_max_frames: int = 5
-    tail_stable_frames: int = 2
+    tail_min_frames: int = 1
+    tail_max_frames: int = 1
+    tail_stable_frames: int = 1
     backchannel_confirm_frames: int = 2
     backchannel_fallback_idle_frames: int = 3
     short_asr_chars: int = 4
-    short_tail_min_frames: int = 4
-    short_tail_max_frames: int = 7
+    short_tail_min_frames: int = 3
+    short_tail_max_frames: int = 5
     acoustic_vad_rms_threshold: float = 0.010
     acoustic_vad_peak_threshold: float = 0.050
     acoustic_vad_hangover_ms: int = 200
-    acoustic_vad_max_hold_frames: int = 8
+    acoustic_vad_max_hold_frames: int = 3
 
     @classmethod
     def from_env(cls, environ: dict[str, str] | None = None) -> RealtimeConfig:

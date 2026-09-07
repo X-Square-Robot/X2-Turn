@@ -11,8 +11,8 @@ The environment files install local editable packages from this checkout. The
 Python packages are not published to PyPI.
 
 The services intentionally use separate environments. Combining Transformers,
-patched vLLM, CosyVoice, and the dialogue LLM in one environment makes CUDA and
-Torch dependency resolution fragile.
+patched vLLM, Qwen3TTS-Streaming, and the dialogue LLM in one environment makes
+CUDA and Torch dependency resolution fragile.
 
 ## Local Transformers inference and Turn Demo
 
@@ -58,19 +58,17 @@ conda env create -f environments/environment-dialogue.yml
 conda activate x2-turn-dialogue
 ```
 
-This environment contains the web app, Edge-TTS fallback, and dialogue LLM
-dependencies. The turn vLLM service should run from `x2-turn-vllm`.
-
-CosyVoice must remain in the environment recommended by the upstream CosyVoice
-project. Point `COSY_PY` at that environment's Python executable and `VLLM_PY`
-at the patched vLLM environment before running `full-duplex-demo/start_demo.sh`.
+This environment contains the web app and dialogue LLM dependencies. The turn
+vLLM service should run from `x2-turn-vllm`; Qwen3TTS-Streaming runs as a
+separate local engine.
 
 Example:
 
 ```bash
-export COSY_PY=/path/to/cosyvoice-env/bin/python
 export VLLM_PY=/path/to/x2-turn-vllm-env/bin/python
 export VOXTRAL_VLLM_MODEL=/path/to/X2-Turn-4B-0812-vllm
+export QWEN3TTS_CLIENT_SRC=/path/to/Qwen3TTS-Streaming/client/src
+export QWEN3_TTS_WS_URL=ws://127.0.0.1:50052/v1/ws
 bash full-duplex-demo/start_demo.sh
 ```
 

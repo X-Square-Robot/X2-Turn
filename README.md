@@ -34,8 +34,9 @@ https://github.com/user-attachments/assets/4040eb7a-4f5b-4e25-8ff4-893caeeb0702
 
 ## 🔥 News
 
+- **[2026-09-05]** We update the full-duplex dialogue demo for faster, smoother interactions, with pause handling support.
 - **[2026-08-28]** We release [X2-ASR-4B-0812](https://huggingface.co/x-square-robot/X2-ASR-4B-0812), the Stage 1 bilingual streaming ASR backbone (no turn head).
-- **[2026-08-20]** We release the [paper](https://arxiv.org/abs/2608.10878), code, X2-Turn-4B, and the Turn Demo.
+- **[2026-08-20]** We release the [paper](https://arxiv.org/abs/2608.10878), code, [X2-Turn-4B-0812](https://huggingface.co/x-square-robot/X2-Turn-4B-0812), and the Turn Demo.
 
 ## Quick start
 
@@ -177,12 +178,13 @@ The bundled sample's text, license, and FFmpeg command are in
 
 ### Full-duplex dialogue demo
 
-This stack adds an optional LLM and TTS, and shows barge-in during playback.
-It is a separate setup: patched vLLM, the dialogue app, and usually an
-external CosyVoice checkout. Start from
+This stack adds a reply LLM and local Qwen3TTS-Streaming, and shows barge-in
+during playback. It is a separate setup: patched vLLM, the dialogue app, and a
+local Qwen3TTS-Streaming engine. Start from
 [`full-duplex-demo/README.md`](full-duplex-demo/README.md).
 
-https://github.com/user-attachments/assets/3e01f699-3dc1-4bcd-89e1-2cff981cbe90
+https://github.com/user-attachments/assets/bb71bb57-8f21-4616-8867-2a4b9c6a52b3
+
 
 ### Realtime serving with vLLM
 
@@ -204,7 +206,7 @@ when another machine must connect.
 - [`turn-demo/`](turn-demo/README.md) — browser demo for raw ASR, 80 ms Turn
   states, and the frame-level token / class / probability table.
 - [`full-duplex-demo/`](full-duplex-demo/README.md) — full conversational
-  stack with optional LLM and TTS.
+  stack with a reply LLM and local Qwen3TTS-Streaming.
 - [`environments/`](environments/README.md) — separate Miniforge
   environments so Transformers, patched vLLM, and the dialogue app do not
   share one CUDA/Torch tree.
@@ -246,8 +248,8 @@ and machine-learning community. We thank:
   runtime extended by the X2 Turn realtime overlay.
 - [Hugging Face Transformers](https://github.com/huggingface/transformers) for
   model loading, processing, and the local inference ecosystem.
-- [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) for the optional
-  streaming TTS integration used by the full-duplex demo.
+- [Qwen3TTS-Streaming](https://github.com/X-Square-Robot/Qwen3TTS-Streaming)
+  for the local streaming TTS engine used by the full-duplex demo.
 
 See the component `NOTICE` files and the available `THIRD_PARTY_NOTICES.md`
 documents for detailed attribution and license information.

@@ -2,6 +2,7 @@ import re
 import os
 import requests
 from itertools import groupby
+from typing import Optional
 from modules.utils.text_utils import split_cn_en
 
 
@@ -23,11 +24,14 @@ class QwenLLM_stream:
         "If the user asks you to stop, output nothing."
     )
 
-    def __init__(self, api_url: str = None):
+    def __init__(self, api_url: str = None, token_stream: Optional[bool] = None):
         self.api_url = api_url or os.environ.get(
             "LLM_API_URL", "http://localhost:6007/chat"
         )
         self.sessions = {}
+        if token_stream is None:
+            token_stream = os.environ.get("LLM_TOKEN_STREAM", "0") == "1"
+        self.token_stream = bool(token_stream)
 
     def get_session(self, client_id: int):
         if client_id not in self.sessions:
@@ -86,6 +90,10 @@ class QwenLLM_stream:
                     response.close()
                     break
                 if not chunk:
+                    continue
+
+                if self.token_stream:
+                    yield chunk
                     continue
 
                 buffer += chunk
