@@ -14,7 +14,7 @@
   </p>
   <p>
     <a href="https://huggingface.co/x-square-robot/X2-Turn-4B-0812"><img src="https://img.shields.io/badge/Hugging%20Face-X2--Turn--4B--0812-yellow" alt="Hugging Face model"></a>
-    <a href="[https://arxiv.org/abs/2608.10878](https://arxiv.org/abs/2608.10878v3)"><img src="https://img.shields.io/badge/arXiv-2608.10878-b31b1b" alt="X2-Turn paper"></a>
+    <a href="https://arxiv.org/abs/2608.10878v3"><img src="https://img.shields.io/badge/arXiv-2608.10878-b31b1b" alt="X2-Turn paper"></a>
     <img src="https://img.shields.io/badge/Python-3.10%2B-blue" alt="Python 3.10+">
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-green" alt="Apache-2.0"></a>
   </p>
@@ -36,7 +36,7 @@ https://github.com/user-attachments/assets/4040eb7a-4f5b-4e25-8ff4-893caeeb0702
 
 - **[2026-09-05]** We update the full-duplex dialogue demo for faster, smoother interactions, with pause handling support.
 - **[2026-08-28]** We release [X2-ASR-4B-0812](https://huggingface.co/x-square-robot/X2-ASR-4B-0812), the Stage 1 bilingual streaming ASR backbone (no turn head).
-- **[2026-08-20]** We release the [paper](https://arxiv.org/abs/2608.10878), code, [X2-Turn-4B-0812](https://huggingface.co/x-square-robot/X2-Turn-4B-0812), and the Turn Demo.
+- **[2026-08-20]** We release the [paper](https://arxiv.org/abs/2608.10878v3), code, [X2-Turn-4B-0812](https://huggingface.co/x-square-robot/X2-Turn-4B-0812), and the Turn Demo.
 
 ## Quick start
 

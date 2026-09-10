@@ -13,7 +13,7 @@
   </p>
   <p>
     <a href="https://huggingface.co/x-square-robot/X2-Turn-4B-0812"><img src="https://img.shields.io/badge/Hugging%20Face-X2--Turn--4B--0812-yellow" alt="Hugging Face 模型"></a>
-    <a href="https://arxiv.org/abs/2608.10878"><img src="https://img.shields.io/badge/arXiv-2608.10878-b31b1b" alt="X2-Turn 论文"></a>
+    <a href="https://arxiv.org/abs/2608.10878v3"><img src="https://img.shields.io/badge/arXiv-2608.10878-b31b1b" alt="X2-Turn 论文"></a>
     <img src="https://img.shields.io/badge/Python-3.10%2B-blue" alt="Python 3.10+">
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-green" alt="Apache-2.0"></a>
   </p>
@@ -35,7 +35,7 @@ https://github.com/user-attachments/assets/4040eb7a-4f5b-4e25-8ff4-893caeeb0702
 
 - **[2026-09-05]** 更新全双工对话 Demo，响应更快、体验更流畅，并支持停顿处理（Pause Handling）。
 - **[2026-08-28]** 开源 Stage 1 中英流式 ASR 权重 [X2-ASR-4B-0812](https://huggingface.co/x-square-robot/X2-ASR-4B-0812)（无 turn 头）。
-- **[2026-08-20]** 发布 [论文](https://arxiv.org/abs/2608.10878)、代码、X2-Turn-4B 与 Turn Demo。
+- **[2026-08-20]** 发布 [论文](https://arxiv.org/abs/2608.10878v3)、代码、X2-Turn-4B 与 Turn Demo。
 
 ## 快速开始
 
