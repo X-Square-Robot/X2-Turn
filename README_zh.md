@@ -13,6 +13,7 @@
   </p>
   <p>
     <a href="https://huggingface.co/x-square-robot/X2-Turn-4B-0812"><img src="https://img.shields.io/badge/Hugging%20Face-X2--Turn--4B--0812-yellow" alt="Hugging Face 模型"></a>
+    <a href="https://huggingface.co/spaces/x-square-robot/x2-turn-4b-demo"><img src="https://img.shields.io/badge/Spaces-在线%20Demo-orange" alt="在线 Demo"></a>
     <a href="https://arxiv.org/abs/2608.10878v3"><img src="https://img.shields.io/badge/arXiv-2608.10878-b31b1b" alt="X2-Turn 论文"></a>
     <img src="https://img.shields.io/badge/Python-3.10%2B-blue" alt="Python 3.10+">
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-green" alt="Apache-2.0"></a>
@@ -26,21 +27,30 @@
 X2 Turn 会转写语音，并每隔 80 毫秒预测一个话轮状态：`idle`、`noidle`、
 `speaking`、`turn_end`、`backchannel` 或 `uncertain`。
 
-最快的试用方式是浏览器里的 **Turn Demo**。这条路径需要一块 GPU 和 4B
-权重，**不需要** LLM、TTS 或 vLLM。
+最快的试用方式是托管的
+[在线 Demo](https://huggingface.co/spaces/x-square-robot/x2-turn-4b-demo)
+（不需要本地 GPU）。感谢 [@multimodalart](https://huggingface.co/multimodalart)
+提供这个 Space。
+
+仓库里的浏览器 **Turn Demo** 需要一块 GPU 和 4B 权重，**不需要** LLM、TTS
+或 vLLM。
 
 https://github.com/user-attachments/assets/4040eb7a-4f5b-4e25-8ff4-893caeeb0702
 
 ## 🔥 动态
 
+- **[2026-09-17]** 上线 Hugging Face Spaces [在线 Demo](https://huggingface.co/spaces/x-square-robot/x2-turn-4b-demo)。感谢 [@multimodalart](https://huggingface.co/multimodalart)。
 - **[2026-09-05]** 更新全双工对话 Demo，响应更快、体验更流畅，并支持停顿处理（Pause Handling）。
 - **[2026-08-28]** 开源 Stage 1 中英流式 ASR 权重 [X2-ASR-4B-0812](https://huggingface.co/x-square-robot/X2-ASR-4B-0812)（无 turn 头）。
 - **[2026-08-20]** 发布 [论文](https://arxiv.org/abs/2608.10878v3)、代码、X2-Turn-4B 与 Turn Demo。
 
 ## 快速开始
 
-只走下面这一条路。等 Demo 跑出文末的期望结果后，再看 vLLM、全双工栈和
-Python API。
+如果只想试用、不想本地安装，请打开
+[在线 Demo](https://huggingface.co/spaces/x-square-robot/x2-turn-4b-demo)。
+
+要在自己的机器上跑同一套 Turn Demo，只走下面这一条路。等 Demo 跑出文末的
+期望结果后，再看 vLLM、全双工栈和 Python API。
 
 **你需要**
 
@@ -235,6 +245,8 @@ X2 Turn 建立在开源语音与机器学习社区的模型、研究和基础设
   X2 Turn 在此基础上实现实时 overlay。
 - [Hugging Face Transformers](https://github.com/huggingface/transformers)
   提供模型加载、音频处理及本地推理生态。
+- [@multimodalart](https://huggingface.co/multimodalart) 提供托管的
+  [在线 Demo](https://huggingface.co/spaces/x-square-robot/x2-turn-4b-demo)。
 - [Qwen3TTS-Streaming](https://github.com/X-Square-Robot/Qwen3TTS-Streaming)
   提供全双工 Demo 使用的本地流式 TTS 引擎。
 

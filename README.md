@@ -14,6 +14,7 @@
   </p>
   <p>
     <a href="https://huggingface.co/x-square-robot/X2-Turn-4B-0812"><img src="https://img.shields.io/badge/Hugging%20Face-X2--Turn--4B--0812-yellow" alt="Hugging Face model"></a>
+    <a href="https://huggingface.co/spaces/x-square-robot/x2-turn-4b-demo"><img src="https://img.shields.io/badge/Spaces-Online%20Demo-orange" alt="Online demo"></a>
     <a href="https://arxiv.org/abs/2608.10878v3"><img src="https://img.shields.io/badge/arXiv-2608.10878-b31b1b" alt="X2-Turn paper"></a>
     <img src="https://img.shields.io/badge/Python-3.10%2B-blue" alt="Python 3.10+">
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-green" alt="Apache-2.0"></a>
@@ -27,21 +28,31 @@
 X2 Turn transcribes speech and, every 80 ms, predicts a turn-taking state:
 `idle`, `noidle`, `speaking`, `turn_end`, `backchannel`, or `uncertain`.
 
-The fastest way to try it is the browser **Turn Demo**. That path needs a GPU
-and the 4B weights. It does **not** need an LLM, TTS, or vLLM.
+The fastest way to try it is the hosted
+[online demo](https://huggingface.co/spaces/x-square-robot/x2-turn-4b-demo)
+(no local GPU). Thanks to [@multimodalart](https://huggingface.co/multimodalart)
+for the Space.
+
+The in-repo browser **Turn Demo** needs a GPU and the 4B weights. It does
+**not** need an LLM, TTS, or vLLM.
 
 https://github.com/user-attachments/assets/4040eb7a-4f5b-4e25-8ff4-893caeeb0702
 
 ## 🔥 News
 
+- **[2026-09-17]** We add a hosted [online demo](https://huggingface.co/spaces/x-square-robot/x2-turn-4b-demo) on Hugging Face Spaces. Thanks to [@multimodalart](https://huggingface.co/multimodalart).
 - **[2026-09-05]** We update the full-duplex dialogue demo for faster, smoother interactions, with pause handling support.
 - **[2026-08-28]** We release [X2-ASR-4B-0812](https://huggingface.co/x-square-robot/X2-ASR-4B-0812), the Stage 1 bilingual streaming ASR backbone (no turn head).
 - **[2026-08-20]** We release the [paper](https://arxiv.org/abs/2608.10878v3), code, [X2-Turn-4B-0812](https://huggingface.co/x-square-robot/X2-Turn-4B-0812), and the Turn Demo.
 
 ## Quick start
 
-Follow this path only. Save vLLM, the full-duplex stack, and the Python API
-until the demo has produced the expected result below.
+To try the model without installing anything, open the
+[online demo](https://huggingface.co/spaces/x-square-robot/x2-turn-4b-demo).
+
+To run the same Turn Demo on your machine, follow this path only. Save vLLM,
+the full-duplex stack, and the Python API until the demo has produced the
+expected result below.
 
 **You need**
 
@@ -248,6 +259,9 @@ and machine-learning community. We thank:
   runtime extended by the X2 Turn realtime overlay.
 - [Hugging Face Transformers](https://github.com/huggingface/transformers) for
   model loading, processing, and the local inference ecosystem.
+- [@multimodalart](https://huggingface.co/multimodalart) for the hosted
+  [online demo](https://huggingface.co/spaces/x-square-robot/x2-turn-4b-demo)
+  on Hugging Face Spaces.
 - [Qwen3TTS-Streaming](https://github.com/X-Square-Robot/Qwen3TTS-Streaming)
   for the local streaming TTS engine used by the full-duplex demo.
 
