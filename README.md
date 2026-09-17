@@ -30,8 +30,7 @@ X2 Turn transcribes speech and, every 80 ms, predicts a turn-taking state:
 
 The fastest way to try it is the hosted
 [online demo](https://huggingface.co/spaces/x-square-robot/x2-turn-4b-demo)
-(no local GPU). Thanks to [@multimodalart](https://huggingface.co/multimodalart)
-for the Space.
+(no local GPU).
 
 The in-repo browser **Turn Demo** needs a GPU and the 4B weights. It does
 **not** need an LLM, TTS, or vLLM.
@@ -259,9 +258,6 @@ and machine-learning community. We thank:
   runtime extended by the X2 Turn realtime overlay.
 - [Hugging Face Transformers](https://github.com/huggingface/transformers) for
   model loading, processing, and the local inference ecosystem.
-- [@multimodalart](https://huggingface.co/multimodalart) for the hosted
-  [online demo](https://huggingface.co/spaces/x-square-robot/x2-turn-4b-demo)
-  on Hugging Face Spaces.
 - [Qwen3TTS-Streaming](https://github.com/X-Square-Robot/Qwen3TTS-Streaming)
   for the local streaming TTS engine used by the full-duplex demo.
 

@@ -29,8 +29,7 @@ X2 Turn 会转写语音，并每隔 80 毫秒预测一个话轮状态：`idle`�
 
 最快的试用方式是托管的
 [在线 Demo](https://huggingface.co/spaces/x-square-robot/x2-turn-4b-demo)
-（不需要本地 GPU）。感谢 [@multimodalart](https://huggingface.co/multimodalart)
-提供这个 Space。
+（不需要本地 GPU）。
 
 仓库里的浏览器 **Turn Demo** 需要一块 GPU 和 4B 权重，**不需要** LLM、TTS
 或 vLLM。
@@ -245,8 +244,6 @@ X2 Turn 建立在开源语音与机器学习社区的模型、研究和基础设
   X2 Turn 在此基础上实现实时 overlay。
 - [Hugging Face Transformers](https://github.com/huggingface/transformers)
   提供模型加载、音频处理及本地推理生态。
-- [@multimodalart](https://huggingface.co/multimodalart) 提供托管的
-  [在线 Demo](https://huggingface.co/spaces/x-square-robot/x2-turn-4b-demo)。
 - [Qwen3TTS-Streaming](https://github.com/X-Square-Robot/Qwen3TTS-Streaming)
   提供全双工 Demo 使用的本地流式 TTS 引擎。
 
