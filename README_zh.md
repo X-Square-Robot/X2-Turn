@@ -34,7 +34,7 @@ X2 Turn 会转写语音，并每隔 80 毫秒预测一个话轮状态：`idle`�
 仓库里的浏览器 **Turn Demo** 需要一块 GPU 和 4B 权重，**不需要** LLM、TTS
 或 vLLM。
 
-https://github.com/user-attachments/assets/4040eb7a-4f5b-4e25-8ff4-893caeeb0702
+https://github.com/user-attachments/assets/bad0e153-9efe-46c2-b9a6-aeef15135825
 
 ## 🔥 动态
 
@@ -186,7 +186,7 @@ python voxtral-realtime/integrations/transformers/examples/offline_inference.py 
 打断。它是另一套安装：patched vLLM、对话应用和本地 TTS 引擎。请从
 [`full-duplex-demo/README.md`](full-duplex-demo/README.md) 开始。
 
-https://github.com/user-attachments/assets/bb71bb57-8f21-4616-8867-2a4b9c6a52b3
+https://github.com/user-attachments/assets/fba269ea-ab77-46c9-b2aa-d71d9cf5e25d
 
 ### 用 vLLM 做实时服务
 

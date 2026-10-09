@@ -35,7 +35,7 @@ The fastest way to try it is the hosted
 The in-repo browser **Turn Demo** needs a GPU and the 4B weights. It does
 **not** need an LLM, TTS, or vLLM.
 
-https://github.com/user-attachments/assets/4040eb7a-4f5b-4e25-8ff4-893caeeb0702
+https://github.com/user-attachments/assets/bad0e153-9efe-46c2-b9a6-aeef15135825
 
 ## 🔥 News
 
@@ -193,7 +193,7 @@ during playback. It is a separate setup: patched vLLM, the dialogue app, and a
 local Qwen3TTS-Streaming engine. Start from
 [`full-duplex-demo/README.md`](full-duplex-demo/README.md).
 
-https://github.com/user-attachments/assets/bb71bb57-8f21-4616-8867-2a4b9c6a52b3
+https://github.com/user-attachments/assets/fba269ea-ab77-46c9-b2aa-d71d9cf5e25d
 
 
 ### Realtime serving with vLLM
